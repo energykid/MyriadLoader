@@ -1,0 +1,187 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\DatabaseLoader.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\source\\DatabaseLoader.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\Aurie\\shared.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\include\\Aurie\\shared.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\FunctionWrapper\\FunctionWrapper.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\include\\FunctionWrapper\\FunctionWrapper.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\YYToolkit\\Shared.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\include\\YYToolkit\\Shared.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\ModuleMain.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\source\\ModuleMain.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\DatabaseLoader.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\source\\DatabaseLoader.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\YYToolkit\\Shared.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\include\\YYToolkit\\Shared.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\ModuleMain.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{17150470-A50C-45AA-A41F-FADEFD288239}|DatabaseLoader\\DatabaseLoader.vcxproj|solutionrelative:DatabaseLoader\\source\\ModuleMain.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VC\\v170\\Microsoft.CppBuild.targets||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\x64\\Release\\DatabaseLoader.log||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:DatabaseLoader\\x64\\Release\\DatabaseLoader.log||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "DatabaseLoader.cpp",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\DatabaseLoader.cpp",
+              "RelativeDocumentMoniker": "DatabaseLoader\\source\\DatabaseLoader.cpp",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\DatabaseLoader.cpp",
+              "RelativeToolTip": "DatabaseLoader\\source\\DatabaseLoader.cpp",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABcAAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-02-26T21:02:51.711Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "FunctionWrapper.hpp",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\FunctionWrapper\\FunctionWrapper.hpp",
+              "RelativeDocumentMoniker": "DatabaseLoader\\include\\FunctionWrapper\\FunctionWrapper.hpp",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\FunctionWrapper\\FunctionWrapper.hpp",
+              "RelativeToolTip": "DatabaseLoader\\include\\FunctionWrapper\\FunctionWrapper.hpp",
+              "ViewState": "AQIAAGYAAAAAAAAAAAAAABQAAAACAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-02-26T20:55:14.816Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Microsoft.CppBuild.targets",
+              "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VC\\v170\\Microsoft.CppBuild.targets",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VC\\v170\\Microsoft.CppBuild.targets",
+              "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VC\\v170\\Microsoft.CppBuild.targets",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VC\\v170\\Microsoft.CppBuild.targets",
+              "ViewState": "AQIAAPEBAAAAAAAAAAApwAQCAAAEAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003801|",
+              "WhenOpened": "2025-02-26T20:04:29.307Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "shared.hpp",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\Aurie\\shared.hpp",
+              "RelativeDocumentMoniker": "DatabaseLoader\\include\\Aurie\\shared.hpp",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\Aurie\\shared.hpp",
+              "RelativeToolTip": "DatabaseLoader\\include\\Aurie\\shared.hpp",
+              "ViewState": "AQIAAAIBAAAAAAAAAAAwwBQBAAAaAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-02-26T17:53:22.535Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Shared.cpp",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\YYToolkit\\Shared.cpp",
+              "RelativeDocumentMoniker": "DatabaseLoader\\include\\YYToolkit\\Shared.cpp",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\YYToolkit\\Shared.cpp",
+              "RelativeToolTip": "DatabaseLoader\\include\\YYToolkit\\Shared.cpp",
+              "ViewState": "AQIAABYAAAAAAAAAAAAwwCgAAAAZAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-02-26T17:49:51.844Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "DatabaseLoader.h",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\DatabaseLoader.h",
+              "RelativeDocumentMoniker": "DatabaseLoader\\source\\DatabaseLoader.h",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\DatabaseLoader.h",
+              "RelativeToolTip": "DatabaseLoader\\source\\DatabaseLoader.h",
+              "ViewState": "AQIAABMAAAAAAAAAAAAuwCwAAAAUAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-02-26T03:50:23.595Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ModuleMain.h",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\ModuleMain.h",
+              "RelativeDocumentMoniker": "DatabaseLoader\\source\\ModuleMain.h",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\ModuleMain.h",
+              "RelativeToolTip": "DatabaseLoader\\source\\ModuleMain.h",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAsAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-02-26T01:11:46.992Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ModuleMain.cpp",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\ModuleMain.cpp",
+              "RelativeDocumentMoniker": "DatabaseLoader\\source\\ModuleMain.cpp",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\source\\ModuleMain.cpp",
+              "RelativeToolTip": "DatabaseLoader\\source\\ModuleMain.cpp",
+              "ViewState": "AQIAAAwAAAAAAAAAAAAAABgAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-02-25T21:19:32.661Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Shared.hpp",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\YYToolkit\\Shared.hpp",
+              "RelativeDocumentMoniker": "DatabaseLoader\\include\\YYToolkit\\Shared.hpp",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\include\\YYToolkit\\Shared.hpp",
+              "RelativeToolTip": "DatabaseLoader\\include\\YYToolkit\\Shared.hpp",
+              "ViewState": "AQIAAKoGAAAAAAAAAAAwwLcGAABIAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-02-26T03:44:36.332Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "DatabaseLoader.log",
+              "DocumentMoniker": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\x64\\Release\\DatabaseLoader.log",
+              "RelativeDocumentMoniker": "DatabaseLoader\\x64\\Release\\DatabaseLoader.log",
+              "ToolTip": "C:\\Users\\Mint\\source\\repos\\DatabaseLoader\\DatabaseLoader\\x64\\Release\\DatabaseLoader.log",
+              "RelativeToolTip": "DatabaseLoader\\x64\\Release\\DatabaseLoader.log",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-02-26T11:50:55.846Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
