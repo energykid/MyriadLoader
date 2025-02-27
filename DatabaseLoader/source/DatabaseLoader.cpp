@@ -2,28 +2,40 @@
 
 using namespace DatabaseLoader;
 
-YYTK::YYTKInterface* DLBehaviorLoader::yytk_interface = nullptr;
-vector<ObjectBehavior> DLBehaviorLoader::objectBehaviors = {};
+vector<ObjectBehavior> DLInterfaceImpl::objectBehaviors = {};
+YYTKInterface* g_YYTKInterface = nullptr;
 
-AurieStatus DLInterface::Create()
+AurieStatus DLInterfaceImpl::Create()
 {
-	DLBehaviorLoader::objectBehaviors = {};
-
-	AurieStatus status = ObGetInterface(
-		"YYTK_Main",
-		reinterpret_cast<AurieInterfaceBase*&>(DLBehaviorLoader::yytk_interface)
-	);
-
-	if (!AurieSuccess(status))
-		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
+	objectBehaviors = {};
 
 	return AURIE_SUCCESS;
 }
 
-void DatabaseLoader::DLInterface::Destroy()
+void DatabaseLoader::DLInterfaceImpl::Destroy()
 {
 }
 
-void DatabaseLoader::DLInterface::QueryVersion(OUT short& Major, OUT short& Minor, OUT short& Patch)
+void DatabaseLoader::DLInterfaceImpl::QueryVersion(OUT short& Major, OUT short& Minor, OUT short& Patch)
 {
+}
+
+void DatabaseLoader::DLInterfaceImpl::AddObjectBehavior(ObjectBehavior behavior)
+{
+	objectBehaviors.push_back(behavior);
+}
+
+void DatabaseLoader::DLInterfaceImpl::AddCustomKeyword(Keyword keyword)
+{
+	customKeywords.push_back(keyword);
+}
+
+RValue DatabaseLoader::DLInterfaceImpl::GetSound(string path)
+{
+	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "mods/Aurie/" + path});
+}
+
+RValue DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int xorig, int yorig)
+{
+	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "mods/Aurie/" + path, imgnum, false, false, xorig, yorig });
 }
