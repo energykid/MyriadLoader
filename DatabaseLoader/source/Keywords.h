@@ -10,13 +10,13 @@ namespace DatabaseLoader
 {
 	class Keywords
 	{
-	public:
-		static void ResolveWeaponBase(
+	public:/*
+		static RValue& ResolveWeaponBase(
 			OUT RValue* Result,
 			IN CInstance* Self,
 			IN CInstance* Other,
 			IN int ArgumentCount,
 			IN RValue* Arguments
-		);
+		);*/
 	};
 }

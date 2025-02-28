@@ -9,6 +9,22 @@ using namespace DatabaseLoader;
 static DLInterface* dl_interface = nullptr;
 static YYTK::YYTKInterface* yytk_interface = nullptr;
 
+/*
+void ParticleStep(CInstance* self, CInstance* other) // put custom object callbacks in here
+{
+	if (yytk_interface->CallBuiltin(
+		"variable_instance_exists",
+		{ self, "custom_object_callback" }
+	).AsBool())
+	{
+		int CallbackID = yytk_interface->CallBuiltin(
+			"variable_instance_get",
+			{ self, "custom_object_callback" }
+		).AsReal();
+	}
+}
+*/
+
 void ObjectBehaviorRun(FWFrame& Context)
 {
 	for (size_t var = 0; var < (g_ModuleInterface.objectBehaviors).size(); var++)
@@ -88,23 +104,21 @@ EXPORTED AurieStatus ModuleInitialize(
 	CScript* script_data = nullptr;
 	int script_index = 0;
 
-	// Get the script data
+	// Keyword initialization
+
+	/*
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_resolve_weapon_base",
 		reinterpret_cast<PVOID*>(&script_data)
 	);
-
-	// Create the hook
 	MmCreateHook(
 		g_ArSelfModule,
-		"My Hook",
+		"Resolve Weapon Keywords",
 		script_data->m_Functions->m_ScriptFunction,
 		Keywords::ResolveWeaponBase,
 		reinterpret_cast<PVOID*>(&original_function)
 	);
-
+	*/
 
 	return AURIE_SUCCESS;
 }
-
-//gml_Script___init_global

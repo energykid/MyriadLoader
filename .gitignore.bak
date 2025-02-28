@@ -1,0 +1,9 @@
+*.ipch
+*.vsidx
+*.db
+*.db-shm
+/.vs
+*.command
+/DatabaseLoader/x64
+/.vs/DatabaseLoader/v17
+/.vs/DatabaseLoader/v17

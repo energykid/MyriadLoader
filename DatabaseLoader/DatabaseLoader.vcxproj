@@ -72,7 +72,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie</OutDir>
+    <OutDir>C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\$(ProjectName)</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="include\YYToolkit\Shared.cpp" />
     <ClCompile Include="source\DatabaseLoader.cpp" />
+    <ClCompile Include="source\Keywords.cpp" />
     <ClCompile Include="source\ModuleMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,7 +155,9 @@
     <ClInclude Include="include\FunctionWrapper\FunctionWrapper.hpp" />
     <ClInclude Include="include\YYToolkit\Shared.hpp" />
     <ClInclude Include="source\DatabaseLoader.h" />
+    <ClInclude Include="source\Keywords.h" />
     <ClInclude Include="source\ModuleMain.h" />
+    <ClInclude Include="source\WeaponIDs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

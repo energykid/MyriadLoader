@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\DatabaseLoader.dll</FullPath>
+      <FullPath>C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\DatabaseLoader\DatabaseLoader.dll</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />
