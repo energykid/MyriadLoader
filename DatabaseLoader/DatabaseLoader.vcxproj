@@ -73,6 +73,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\$(ProjectName)</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);C:\Users\Roanv\Downloads\sol2-3.3.0\sol2-3.3.0\include;C:\Users\Roanv\Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src\jit;C:\Users\Roanv\Downloads\lua-5.4.2_Win64_dll17_lib\include;</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -135,13 +136,15 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)C:\Users\Roanv\Downloads\sol2-3.3.0\sol2-3.3.0\includeC:\Users\Roanv\Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src\jitC:\Users\Roanv\Downloads\lua-5.4.2_Win64_dll17_lib\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Users\Roanv\Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src;C:\Users\Roanv\Downloads\lua-5.4.2_Win64_dll17_lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);lua51.lib;lua54.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -153,6 +156,9 @@
   <ItemGroup>
     <ClInclude Include="include\Aurie\shared.hpp" />
     <ClInclude Include="include\FunctionWrapper\FunctionWrapper.hpp" />
+    <ClInclude Include="include\sol\config.hpp" />
+    <ClInclude Include="include\sol\forward.hpp" />
+    <ClInclude Include="include\sol\sol.hpp" />
     <ClInclude Include="include\YYToolkit\Shared.hpp" />
     <ClInclude Include="source\DatabaseLoader.h" />
     <ClInclude Include="source\Keywords.h" />
