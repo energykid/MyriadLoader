@@ -5,3 +5,6 @@
 /.vs
 *.command
 /DatabaseLoader/x64
+*.vcxproj
+*.lastbuildstate
+/DatabaseLoader/x64
