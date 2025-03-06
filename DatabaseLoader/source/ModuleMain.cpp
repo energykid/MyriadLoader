@@ -1,3 +1,5 @@
+#define SOL_ALL_SAFETIES_ON 1
+#include <sol/sol.hpp>
 #include <YYToolkit/Shared.hpp>
 #include "ModuleMain.h"
 #include "DatabaseLoader.h"
@@ -100,6 +102,10 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	InitMods();
 
+	sol::state lua;
+	lua.open_libraries(sol::lib::base);
+	lua.script("print('woooo')");
+
 	TRoutine original_function = nullptr;
 	CScript* script_data = nullptr;
 	int script_index = 0;
@@ -120,5 +126,6 @@ EXPORTED AurieStatus ModuleInitialize(
 	);
 	*/
 
+	
 	return AURIE_SUCCESS;
 }
