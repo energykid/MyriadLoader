@@ -9,3 +9,4 @@
 *.lastbuildstate
 /DatabaseLoader/x64
 *.command
+/.vs
