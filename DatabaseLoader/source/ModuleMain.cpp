@@ -103,9 +103,37 @@ EXPORTED AurieStatus ModuleInitialize(
 	InitMods();
 
 	sol::state lua;
-	lua.open_libraries(sol::lib::base);
-	lua.script("print('woooo')");
 
+	lua.open_libraries(sol::lib::base, sol::lib::package);
+
+	lua["debug_out"] = [](string text) {
+		yytk_interface->PrintInfo(text);
+		};
+
+	lua["set_variable"] = [](int inst, string varName, RValue value) {
+		dl_interface->SetVariable(inst, varName, value);
+		};
+	lua["spawn_particle"] = [](int x, int y, int xvel, int yvel, int sprite) {
+		dl_interface->SpawnParticle(x, y, xvel, yvel, sprite);
+		};
+	lua["get_int"] = [](int inst, string varName, RValue value) {
+		return dl_interface->GetInt(yytk_interface->CallBuiltin("instance_id_get", { inst }).AsReal(), varName);
+		};
+	lua["get_bool"] = [](int inst, string varName, RValue value) {
+		return dl_interface->GetBool(yytk_interface->CallBuiltin("instance_id_get", { inst }).AsReal(), varName);
+		};
+	lua["get_sprite"] = [](string path, int imgnum, int xorig, int yorig) {
+		return dl_interface->GetSprite(path, imgnum, xorig, yorig);
+		};
+	lua["get_sound"] = [](string path) {
+		return dl_interface->GetSound(path);
+		};
+	
+	lua["get_sound"] = [](string path) {
+		return dl_interface->GetSound(path);
+		};
+
+	lua.script("debug_out('Lua successfully integrated into DBLoader!')");
 	TRoutine original_function = nullptr;
 	CScript* script_data = nullptr;
 	int script_index = 0;

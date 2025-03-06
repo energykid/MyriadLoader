@@ -34,6 +34,51 @@ void DatabaseLoader::DLInterfaceImpl::AddCustomKeyword(Keyword keyword)
 	customKeywords.push_back(keyword);
 }
 
+void DatabaseLoader::DLInterfaceImpl::InitializeVariable(int inst, string varName, RValue value)
+{
+	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {
+		inst,
+		varName
+		}).AsBool())
+	{
+		g_YYTKInterface->CallBuiltin("variable_instance_set", {
+		inst,
+		varName,
+		value
+			});
+	}
+}
+
+void DatabaseLoader::DLInterfaceImpl::SetVariable(int inst, string varName, RValue value)
+{
+	g_YYTKInterface->CallBuiltin("variable_instance_set", {
+	inst,
+	varName,
+	value
+		});
+}
+
+int DatabaseLoader::DLInterfaceImpl::GetInstanceID(int inst)
+{
+	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
+	inst,
+	"index" }).AsReal();
+}
+
+int DatabaseLoader::DLInterfaceImpl::GetInt(int inst, string varName)
+{
+	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
+	inst,
+	varName }).AsReal();
+}
+
+bool DatabaseLoader::DLInterfaceImpl::GetBool(int inst, string varName)
+{
+	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
+	inst,
+	varName }).AsBool();
+}
+
 /// <summary>
 /// Gets a sound from the given path, then returns the sound asset. .OGG ONLY.
 /// </summary>
@@ -41,9 +86,9 @@ void DatabaseLoader::DLInterfaceImpl::AddCustomKeyword(Keyword keyword)
 /// Ex. Getting the file at "Monolith/mods/Aurie/ModName/Textures/tex.png" you would input "ModName/Textures/tex.png".
 /// </param>
 /// <returns></returns>
-RValue DatabaseLoader::DLInterfaceImpl::GetSound(string path)
+int DatabaseLoader::DLInterfaceImpl::GetSound(string path)
 {
-	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "mods/Aurie/" + path });
+	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "mods/Aurie/" + path }).AsReal();
 }
 
 /// <summary>
@@ -54,11 +99,9 @@ RValue DatabaseLoader::DLInterfaceImpl::GetSound(string path)
 /// <param name="xorig"></param>
 /// <param name="yorig"></param>
 /// <returns></returns>
-RValue DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int xorig, int yorig)
+int DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int xorig, int yorig)
 {
-	g_YYTKInterface->PrintInfo("mods/Aurie/" + path + ": Sprite added!");
-
-	return g_YYTKInterface->CallBuiltin("sprite_add", { "mods/Aurie/" + path, imgnum, false, false, xorig, yorig });
+	return g_YYTKInterface->CallBuiltin("sprite_add", { "mods/Aurie/" + path, imgnum, false, false, xorig, yorig }).AsReal();
 }
 
 /// <summary>
@@ -68,10 +111,8 @@ RValue DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int x
 /// <param name="y">Y position to spawn the particle at.</param>
 /// <param name="sprite">The sprite used by the particle, gathered from GetSprite().</param>
 /// <returns></returns>
-RValue DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, RValue sprite)
+int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int sprite)
 {
-	g_YYTKInterface->PrintInfo("Particle spawned 1");
-
 	RValue part = g_YYTKInterface->CallBuiltin(
 		"instance_create_depth",
 		{
@@ -85,8 +126,6 @@ RValue DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, RValue sprit
 		}
 	);
 
-	g_YYTKInterface->PrintInfo("Particle spawned 2");
-
 	g_YYTKInterface->CallBuiltin(
 		"variable_instance_set",
 		{
@@ -96,12 +135,10 @@ RValue DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, RValue sprit
 		}
 	);
 
-	g_YYTKInterface->PrintInfo("Particle spawned 3");
-
-	return part;
+	return part.AsReal();
 }
 
-RValue DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int xvel, int yvel, RValue sprite)
+int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int xvel, int yvel, int sprite)
 {
 	RValue part = g_ModuleInterface.SpawnParticle(x, y, sprite);
 
@@ -122,5 +159,5 @@ RValue DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int xvel, in
 		}
 	);
 
-	return part;
+	return part.AsReal();
 }

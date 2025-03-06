@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sol/sol.hpp"
 #include "YYToolkit/Shared.hpp"
 #include "Aurie/shared.hpp"
 
@@ -35,15 +36,15 @@ namespace DatabaseLoader
 	{
 	public:
 		string objectName;
-		function<void(CInstance* self, CInstance* other)> Step{};
-		function<void(CInstance* self, CInstance* other)> Create{};
+		std::function<void(CInstance* self, CInstance* other)> Step{};
+		std::function<void(CInstance* self, CInstance* other)> Create{};
 
 		/// <summary>
 		/// A custom per-object behavior.
 		/// </summary>
 		/// <param name="name">The name of the object that uses this behavior.</param>
 		/// <param name="step">The function to run every step from the named object.</param>
-		ObjectBehavior(string name, function<void(CInstance* self, CInstance* other)> step) :
+		ObjectBehavior(string name, std::function<void(CInstance* self, CInstance* other)> step) :
 			objectName(name),
 			Step(step) {};
 	};
@@ -70,13 +71,23 @@ namespace DatabaseLoader
 
 		virtual void AddCustomKeyword(Keyword keyword) = 0;
 
-		virtual RValue GetSound(string path) = 0;
+		virtual void InitializeVariable(int inst, string varName, RValue value) = 0;
 
-		virtual RValue GetSprite(string path, int imgnum, int xorig, int yorig) = 0;
+		virtual void SetVariable(int inst, string varName, RValue value) = 0;
 
-		virtual RValue SpawnParticle(int x, int y, RValue sprite) = 0;
+		virtual int GetInstanceID(int inst) = 0;
 
-		virtual RValue SpawnParticle(int x, int y, int xvel, int yvel, RValue sprite) = 0;
+		virtual int GetInt(int inst, string varName) = 0;
+
+		virtual bool GetBool(int inst, string varName) = 0;
+
+		virtual int GetSound(string path) = 0;
+
+		virtual int GetSprite(string path, int imgnum, int xorig, int yorig) = 0;
+
+		virtual int SpawnParticle(int x, int y, int sprite) = 0;
+
+		virtual int SpawnParticle(int x, int y, int xvel, int yvel, int sprite) = 0;
 	};
 
 	class DLInterfaceImpl : public DLInterface
@@ -99,13 +110,23 @@ namespace DatabaseLoader
 
 		void AddCustomKeyword(Keyword keyword) override final;
 
-		RValue GetSound(string path) override final;
+		void InitializeVariable(int inst, string varName, RValue value) override final;
 
-		RValue GetSprite(string path, int imgnum, int xorig, int yorig) override final;
+		void SetVariable(int inst, string varName, RValue value) override final;
 
-		RValue SpawnParticle(int x, int y, RValue sprite) override final;
+		int GetInstanceID(int inst) override final;
 
-		RValue SpawnParticle(int x, int y, int xvel, int yvel, RValue sprite) override final;
+		int GetInt(int inst, string varName) override final;
+
+		bool GetBool(int inst, string varName) override final;
+
+		int GetSound(string path) override final;
+
+		int GetSprite(string path, int imgnum, int xorig, int yorig) override final;
+
+		int SpawnParticle(int x, int y, int sprite) override final;
+
+		int SpawnParticle(int x, int y, int xvel, int yvel, int sprite) override final;
 	};
 
 	inline DLInterfaceImpl g_ModuleInterface;

@@ -8,3 +8,8 @@
 *.lastbuildstate
 *.command
 /.vs
+*.tlog
+*.ipdb
+*.iobj
+*.obj
+*.pdb

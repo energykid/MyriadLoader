@@ -1,10 +1,12 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(517,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
-  DatabaseLoader.cpp
   ModuleMain.cpp
+C:\Users\Mint\source\repos\DatabaseLoader\DatabaseLoader\DatabaseLoader\source\ModuleMain.cpp(120,94): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+C:\Users\Mint\source\repos\DatabaseLoader\DatabaseLoader\DatabaseLoader\source\ModuleMain.cpp(123,95): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
      Creating library C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\DatabaseLoader\DatabaseLoader.lib and object C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\DatabaseLoader\DatabaseLoader.exp
   Generating code
-  Previous IPDB and IOBJ mismatch, fall back to full compilation.
-  All 629 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  257 of 1407 functions (18.3%) were compiled, the rest were copied from previous compilation.
+    163 functions were new in current compilation
+    198 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   DatabaseLoader.vcxproj -> C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\DatabaseLoader\DatabaseLoader.dll
   'pwsh.exe' is not recognized as an internal or external command,
