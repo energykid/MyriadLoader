@@ -1,8 +1,9 @@
 #include "DatabaseLoader.h"
+#include "Aurie/shared.hpp"
 
 using namespace DatabaseLoader;
 
-vector<ObjectBehavior> DLInterfaceImpl::objectBehaviors = {};
+vector<sol::table> DLInterfaceImpl::objectBehaviors = {};
 YYTKInterface* g_YYTKInterface = nullptr;
 
 AurieStatus DLInterfaceImpl::Create()
@@ -20,22 +21,29 @@ void DatabaseLoader::DLInterfaceImpl::QueryVersion(OUT short& Major, OUT short& 
 {
 }
 
-void DatabaseLoader::DLInterfaceImpl::AddObjectBehavior(ObjectBehavior behavior)
+void DatabaseLoader::DLInterfaceImpl::AddObjectBehavior(sol::table behavior)
 {
 	objectBehaviors.push_back(behavior);
 }
 
-/// <summary>
-/// Adds a custom keyword.
-/// </summary>
-/// <param name="keyword"></param>
-void DatabaseLoader::DLInterfaceImpl::AddCustomKeyword(Keyword keyword)
+void DatabaseLoader::DLInterfaceImpl::InitializeVariable(int inst, string varName, sol::object value)
 {
-	customKeywords.push_back(keyword);
-}
+	RValue val = 0;
+	switch (value.get_type())
+	{
+	case sol::lua_type_of_v<int>:
+		val = value.as<int>();
+		break;
+	case sol::lua_type_of_v<bool>:
+		val = value.as<bool>();
+		break;
+	case sol::lua_type_of_v<string>:
+		val = value.as<string>();
+		break;
+	default:
+		break;
+	}
 
-void DatabaseLoader::DLInterfaceImpl::InitializeVariable(int inst, string varName, RValue value)
-{
 	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {
 		inst,
 		varName
@@ -44,17 +52,32 @@ void DatabaseLoader::DLInterfaceImpl::InitializeVariable(int inst, string varNam
 		g_YYTKInterface->CallBuiltin("variable_instance_set", {
 		inst,
 		varName,
-		value
+		val
 			});
 	}
 }
 
-void DatabaseLoader::DLInterfaceImpl::SetVariable(int inst, string varName, RValue value)
+void DatabaseLoader::DLInterfaceImpl::SetVariable(int inst, string varName, sol::object value)
 {
+	RValue val = 0;
+	switch (value.get_type())
+	{
+	case sol::lua_type_of_v<int>:
+		val = value.as<int>();
+		break;
+	case sol::lua_type_of_v<bool>:
+		val = value.as<bool>();
+		break;
+	case sol::lua_type_of_v<string>:
+		val = value.as<string>();
+		break;
+	default:
+		break;
+	}
 	g_YYTKInterface->CallBuiltin("variable_instance_set", {
 	inst,
 	varName,
-	value
+	val
 		});
 }
 
@@ -88,7 +111,7 @@ bool DatabaseLoader::DLInterfaceImpl::GetBool(int inst, string varName)
 /// <returns></returns>
 int DatabaseLoader::DLInterfaceImpl::GetSound(string path)
 {
-	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "mods/Aurie/" + path }).AsReal();
+	return (int)g_YYTKInterface->CallBuiltin("audio_create_stream", { "DatabaseLoader/" + path }).AsReal();
 }
 
 /// <summary>
@@ -101,17 +124,10 @@ int DatabaseLoader::DLInterfaceImpl::GetSound(string path)
 /// <returns></returns>
 int DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int xorig, int yorig)
 {
-	return g_YYTKInterface->CallBuiltin("sprite_add", { "mods/Aurie/" + path, imgnum, false, false, xorig, yorig }).AsReal();
+	return (int)g_YYTKInterface->CallBuiltin("sprite_add", { "DatabaseLoader/" + path, imgnum, false, false, xorig, yorig }).AsReal();
 }
 
-/// <summary>
-/// Spawns a particle with the given sprite at the given X and Y position and returns the instance index.
-/// </summary>
-/// <param name="x">X position to spawn the particle at.</param>
-/// <param name="y">Y position to spawn the particle at.</param>
-/// <param name="sprite">The sprite used by the particle, gathered from GetSprite().</param>
-/// <returns></returns>
-int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int sprite)
+RValue DatabaseLoader::DLInterfaceImpl::SpawnBasicParticle(int x, int y, int sprite)
 {
 	RValue part = g_YYTKInterface->CallBuiltin(
 		"instance_create_depth",
@@ -135,12 +151,12 @@ int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int sprite)
 		}
 	);
 
-	return part.AsReal();
+	return part;
 }
 
 int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int xvel, int yvel, int sprite)
 {
-	RValue part = g_ModuleInterface.SpawnParticle(x, y, sprite);
+	RValue part = g_ModuleInterface.SpawnBasicParticle(x, y, sprite);
 
 	g_YYTKInterface->CallBuiltin(
 		"variable_instance_set",
@@ -160,4 +176,35 @@ int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int xvel, int y
 	);
 
 	return part.AsReal();
+}
+
+AurieStatus DLInterfaceImpl::InvokeWithObjectIndex(string Object, sol::protected_function func)
+{
+	RValue object_index = g_YYTKInterface->CallBuiltin(
+		"asset_get_index",
+		{ Object }
+	);
+
+	int64_t object_count = static_cast<int64_t>(g_YYTKInterface->CallBuiltin(
+		"instance_number",
+		{ object_index }
+	).AsReal());
+
+	if (object_count < 1)
+		return AURIE_OBJECT_NOT_FOUND;
+
+	for (int64_t i = 0; i < object_count; i++)
+	{
+		RValue instance = g_YYTKInterface->CallBuiltin(
+			"instance_find",
+			{
+				object_index,
+				i
+			}
+		);
+		int id = g_YYTKInterface->CallBuiltin("instance_id_get", { instance }).AsReal();
+
+		func.call(id);
+	}
+	return AURIE_SUCCESS;
 }

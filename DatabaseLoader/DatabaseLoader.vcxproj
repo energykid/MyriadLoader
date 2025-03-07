@@ -72,8 +72,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>C:\Program Files (x86)\Steam\steamapps\common\Monolith\mods\Aurie\$(ProjectName)</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);F:\All Downloads\sol2-3.3.0\include;F:\All Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src;F:\All Downloads\lua-5.4.7</IncludePath>
+    <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);F:\All Downloads\lua-5.1.5\lua-5.1.5\src;F:\All Downloads\lua-5.1.5\lua-5.1.5\src</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -136,21 +136,20 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>F:\All Downloads\sol2-3.3.0\include;F:\All Downloads\lua-5.4.7;F:\All Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src;%(AdditionalIncludeDirectories);C:\Users\Mint\source\repos\DatabaseLoader\DatabaseLoader\DatabaseLoader\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\All Downloads\sol2-3.3.0\include;F:\All Downloads\lua-5.4.7;F:\All Downloads\lua-5.1.5\lua-5.1.5\src;F:\All Downloads\lua-5.1.5\lua-5.1.5\src;F:\All Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src;%(AdditionalIncludeDirectories);C:\Users\Mint\source\repos\DatabaseLoader\DatabaseLoader\DatabaseLoader\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\All Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src;F:\All Downloads\lua-5.4.7</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>F:\All Downloads\LuaJIT-2.1.ROLLING\LuaJIT-2.1.ROLLING\src;F:\All Downloads\lua dlls</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);lua51.lib;lua54.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\YYToolkit\Shared.cpp" />
     <ClCompile Include="source\DatabaseLoader.cpp" />
-    <ClCompile Include="source\Keywords.cpp" />
     <ClCompile Include="source\ModuleMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -162,7 +161,6 @@
     <ClInclude Include="include\YYToolkit\Shared.hpp" />
     <ClInclude Include="source\assert.hpp" />
     <ClInclude Include="source\DatabaseLoader.h" />
-    <ClInclude Include="source\Keywords.h" />
     <ClInclude Include="source\ModuleMain.h" />
     <ClInclude Include="source\WeaponIDs.h" />
   </ItemGroup>
