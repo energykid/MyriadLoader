@@ -3,7 +3,7 @@
 *.db
 *.db-shm
 *.command
-/DatabaseLoader/x64
+/x64
 *.vcxproj
 *.lastbuildstate
 *.command
