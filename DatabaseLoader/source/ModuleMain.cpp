@@ -141,6 +141,12 @@ EXPORTED AurieStatus ModuleInitialize(
 	)");
 
 	dl_lua["object_behaviors"][0]["stepFunc"].call(0);
+
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_FRAME,
+		ObjectBehaviorRun,
+		0);
 	
 	return AURIE_SUCCESS;
 }
