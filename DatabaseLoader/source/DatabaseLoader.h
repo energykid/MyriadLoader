@@ -47,7 +47,7 @@ namespace DatabaseLoader
 
 		virtual int SpawnParticle(int x, int y, int xvel, int yvel, int sprite) = 0;
 
-		virtual AurieStatus InvokeWithObjectIndex(
+		virtual void InvokeWithObjectIndex(
 			string Object,
 			sol::protected_function Method
 		) = 0;
@@ -89,7 +89,7 @@ namespace DatabaseLoader
 
 		int SpawnParticle(int x, int y, int xvel, int yvel, int sprite) override final;
 
-		AurieStatus InvokeWithObjectIndex(
+		void InvokeWithObjectIndex(
 			string Object,
 			sol::protected_function Method
 		) override final;

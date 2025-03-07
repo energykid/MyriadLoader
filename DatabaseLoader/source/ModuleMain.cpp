@@ -141,30 +141,6 @@ EXPORTED AurieStatus ModuleInitialize(
 	)");
 
 	dl_lua["object_behaviors"][0]["stepFunc"].call(0);
-
-	yytk_interface->CreateCallback(
-		Module,
-		YYTK::EVENT_FRAME,
-		ObjectBehaviorRun,
-		0);
-
-	// Keyword initialization
-
-	/*
-
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_resolve_weapon_base",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"Resolve Weapon Keywords",
-		script_data->m_Functions->m_ScriptFunction,
-		Keywords::ResolveWeaponBase,
-		reinterpret_cast<PVOID*>(&original_function)
-	);
-
-	*/
 	
 	return AURIE_SUCCESS;
 }

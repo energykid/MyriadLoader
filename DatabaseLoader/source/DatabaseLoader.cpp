@@ -178,7 +178,7 @@ int DatabaseLoader::DLInterfaceImpl::SpawnParticle(int x, int y, int xvel, int y
 	return part.AsReal();
 }
 
-AurieStatus DLInterfaceImpl::InvokeWithObjectIndex(string Object, sol::protected_function func)
+void DLInterfaceImpl::InvokeWithObjectIndex(string Object, sol::protected_function func)
 {
 	RValue object_index = g_YYTKInterface->CallBuiltin(
 		"asset_get_index",
@@ -189,9 +189,6 @@ AurieStatus DLInterfaceImpl::InvokeWithObjectIndex(string Object, sol::protected
 		"instance_number",
 		{ object_index }
 	).AsReal());
-
-	if (object_count < 1)
-		return AURIE_OBJECT_NOT_FOUND;
 
 	for (int64_t i = 0; i < object_count; i++)
 	{
@@ -206,5 +203,4 @@ AurieStatus DLInterfaceImpl::InvokeWithObjectIndex(string Object, sol::protected
 
 		func.call(id);
 	}
-	return AURIE_SUCCESS;
 }
