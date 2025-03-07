@@ -9,7 +9,6 @@ namespace DatabaseLoader
 {
 	class ModuleMain
 	{
-	public:
-		static inline sol::state g_Lua;
+
 	};
 }

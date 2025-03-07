@@ -69,14 +69,6 @@ EXPORTED AurieStatus ModuleInitialize(
 	if (!AurieSuccess(last_status))
 		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
 
-	last_status = ObGetInterface(
-		"Database",
-		reinterpret_cast<AurieInterfaceBase*&>(dl_interface)
-	);
-
-	if (!AurieSuccess(last_status))
-		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
-
 	yytk_interface->PrintInfo("Database Loader has initialized!");
 
 	TRoutine original_function = nullptr;
@@ -139,8 +131,6 @@ EXPORTED AurieStatus ModuleInitialize(
 
 		debug_out(object_behaviors[0].objectName)
 	)");
-
-	dl_lua["object_behaviors"][0]["stepFunc"].call(0);
 
 	yytk_interface->CreateCallback(
 		Module,
