@@ -12,7 +12,7 @@ static YYTK::YYTKInterface* yytk_interface = nullptr;
 
 static sol::state dl_lua;
 
-void ObjectBehaviorRun(FWFrame& Context)
+void ObjectBehaviorRun(FWFrame& context)
 {
 	static sol::table allBehaviors = dl_lua["object_behaviors"];
 
@@ -70,10 +70,6 @@ EXPORTED AurieStatus ModuleInitialize(
 		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
 
 	yytk_interface->PrintInfo("Database Loader has initialized!");
-
-	TRoutine original_function = nullptr;
-	CScript* script_data = nullptr;
-	int script_index = 0;
 
 	dl_lua.open_libraries(sol::lib::base, sol::lib::package);
 

@@ -2947,19 +2947,7 @@ struct pre_main {
 
 // beginning of sol/compatibility/lua_version.hpp
 
-#if SOL_IS_ON(SOL_USE_CXX_LUA)
-	#include <lua.h>
-	#include <lualib.h>
-	#include <lauxlib.h>
-#elif SOL_IS_ON(SOL_USE_LUA_HPP)
-	#include <lua.hpp>
-#else
-	extern "C" {
-		#include <lua.h>
-		#include <lauxlib.h>
-		#include <lualib.h>
-	}
-#endif // C++ Mangling for Lua vs. Not
+#include <lua/lua.hpp>
 
 #if defined(SOL_LUAJIT)
 	#if (SOL_LUAJIT != 0)
@@ -3152,9 +3140,6 @@ struct pre_main {
 #if defined(__cplusplus) && !defined(COMPAT53_LUA_CPP)
 extern "C" {
 #endif
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 #if defined(__cplusplus) && !defined(COMPAT53_LUA_CPP)
 }
 #endif
@@ -4412,9 +4397,6 @@ COMPAT53_API void luaL_requiref(lua_State* L, const char* modname, lua_CFunction
 #if defined(__cplusplus) && !defined(COMPAT53_LUA_CPP)
 extern "C" {
 #endif
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 #if defined(__cplusplus) && !defined(COMPAT53_LUA_CPP)
 }
 #endif
