@@ -1,9 +1,16 @@
 #pragma once
-
+#include "DatabaseLoader.h"
+#include "Aurie/shared.hpp"
+#include "YYToolkit/Shared.hpp"
+#include "DBLua.h"
+#include <map>
+#include "sol/sol.hpp"
 #include <iostream>
 #include <filesystem>
 #include <string>
 #include <vector>
+
+using namespace std;
 
 namespace DatabaseLoader
 {
@@ -11,5 +18,6 @@ namespace DatabaseLoader
 	{
 	public:
 		static std::vector<std::string> GetFilesOfType(const std::string& dir_path, const std::string& extension);
+		static bool MakeDirectory(string dir_name);
 	};
 }

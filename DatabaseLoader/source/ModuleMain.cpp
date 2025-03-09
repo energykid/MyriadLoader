@@ -1,8 +1,16 @@
 #define SOL_ALL_SAFETIES_ON 1
-#include <sol/sol.hpp>
 #include <YYToolkit/Shared.hpp>
 #include "ModuleMain.h"
 #include "DatabaseLoader.h"
+#include <sol/sol.hpp>
+#include "DBLua.h"
+#include "Files.h"
+#include <iostream>
+#include <string>
+#include <windows.h>
+#include <shlobj_core.h>
+
+#pragma comment(lib, "lua54.lib")
 
 using namespace Aurie;
 using namespace DatabaseLoader;
@@ -10,19 +18,49 @@ using namespace DatabaseLoader;
 static DLInterface* dl_interface = nullptr;
 static YYTK::YYTKInterface* yytk_interface = nullptr;
 
-static sol::state dl_lua;
+static sol::table allBehaviors;
+
+string GetUserDirectory() {
+	char path[MAX_PATH];
+	if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, path) == S_OK) {
+		return string(path);
+	}
+	else {
+		return "";
+	}
+}
 
 void ObjectBehaviorRun(FWFrame& context)
 {
-	static sol::table allBehaviors = dl_lua["object_behaviors"];
+	UNREFERENCED_PARAMETER(context);
 
-	for (int var = 0; var < allBehaviors.size() + 1; var++)
+	if (allBehaviors)
 	{
-		sol::lua_table tbl = allBehaviors[var];
-
-		dl_interface->InvokeWithObjectIndex(tbl["objectName"], tbl["stepFunc"]);
+		for (double var = 1; var < allBehaviors.size() + 1; var++)
+		{
+			sol::lua_table tbl = allBehaviors[var];
+			DBLua::InvokeWithObjectIndex(tbl["objectName"], tbl["stepFunc"]);
+		}
 	}
 };
+
+sol::table NewObjectBehavior(string objectName, sol::protected_function func)
+{
+	static sol::table allBehaviors = DatabaseLoader::dl_lua["object_behaviors"];
+
+	if (allBehaviors)
+	{
+		sol::table behav = DatabaseLoader::dl_lua.create_table();
+		behav["objectName"] = objectName;
+		behav["stepFunc"] = func;
+
+		allBehaviors.add(behav);
+
+		return behav;
+	}
+
+	return sol::nil;
+}
 
 EXPORTED AurieStatus ModulePreInitialize(
 	IN AurieModule* Module,
@@ -47,12 +85,32 @@ EXPORTED AurieStatus ModulePreInitialize(
 	return AURIE_SUCCESS;
 }
 
+RValue ObjectToRValue(sol::object obj)
+{
+	RValue val = 0;
+
+	switch (obj.get_type())
+	{
+	case sol::lua_type_of_v<double>:
+		return obj.as<double>();
+	case sol::lua_type_of_v<bool>:
+		return obj.as<bool>();
+	case sol::lua_type_of_v<string>:
+		return obj.as<string>();
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 
 EXPORTED AurieStatus ModuleInitialize(
 	IN AurieModule* Module,
 	IN const fs::path& ModulePath
 )
 {
+	UNREFERENCED_PARAMETER(Module);
 	UNREFERENCED_PARAMETER(ModulePath);
 
 	g_ModuleInterface.Create();
@@ -71,68 +129,68 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	yytk_interface->PrintInfo("Database Loader has initialized!");
 
-	dl_lua.open_libraries(sol::lib::base, sol::lib::package);
+	DatabaseLoader::dl_lua.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);
 
-	dl_lua.script(R"(
-		object_behaviors = {}
-
-		function new_object_behavior(object, callback)
-			local behavior = {}
-			behavior.objectName = object
-			behavior.stepFunc = callback
-			object_behaviors[#object_behaviors] = behavior
-		end
-	)");
-
-	dl_lua["debug_out"] = [](string text) {
+	DatabaseLoader::dl_lua["debug_out"] = [](string text) {
 		yytk_interface->PrintInfo(text);
 		};
 
-	dl_lua["init_variable"] = [](int inst, string varName, sol::object value) {
-		dl_interface->InitializeVariable(inst, varName, value);
-		};
-	dl_lua["set_variable"] = [](int inst, string varName, sol::object value) {
-		dl_interface->SetVariable(inst, varName, value);
-		};
-	dl_lua["spawn_particle"] = [](int x, int y, int xvel, int yvel, int sprite) {
-		dl_interface->SpawnParticle(x, y, xvel, yvel, sprite);
-		};
-	dl_lua["get_int"] = [](int inst, string varName) {
-		return dl_interface->GetInt(inst, varName);
-		};
-	dl_lua["get_bool"] = [](int inst, string varName) {
-		return dl_interface->GetBool(inst, varName);
-		};
-	dl_lua["get_sprite"] = [](string path, int imgnum, int xorig, int yorig) {
-		return dl_interface->GetSprite(path, imgnum, xorig, yorig);
-		};
-	dl_lua["get_sound"] = [](string path) {
-		return dl_interface->GetSound(path);
-		};
+	DatabaseLoader::dl_lua["object_behaviors"] = DatabaseLoader::dl_lua.create_table();
 
-	dl_lua.script(R"(
-		particleSprite = get_sprite('GhostParticle.png', 4, 4, 6)
+	DatabaseLoader::dl_lua["object_behaviors"][0] = sol::nil;
 
-		new_object_behavior('obj_ghost', function(obj)
+	allBehaviors = DatabaseLoader::dl_lua["object_behaviors"];
 
-			init_variable(obj, 'ghostTimer', 0)
-			set_variable(obj, 'ghostTimer', get_int(obj, 'ghostTimer') + 1)
-			
-			debug_out(tostring(get_int(obj, 'ghostTimer')))
+	DatabaseLoader::dl_lua["new_object_behavior"] = NewObjectBehavior;
 
-			if (math.fmod(get_int(obj, 'ghostTimer'), 5) == 0) then 
-				spawn_particle(get_int(obj, 'x'), get_int(obj, 'y'), 0, -1, particleSprite) 
-			end
-		end)
+	DatabaseLoader::dl_lua["spawn_particle"] = DBLua::SpawnParticle;
 
-		debug_out(object_behaviors[0].objectName)
-	)");
+	DatabaseLoader::dl_lua["init_number"] = DBLua::InitDouble;
+
+	DatabaseLoader::dl_lua["init_var"] = DBLua::InitVar;
+
+	DatabaseLoader::dl_lua["set_var"] = DBLua::SetVar;
+
+	DatabaseLoader::dl_lua["init_number"] = DBLua::InitVar;
+
+	DatabaseLoader::dl_lua["init_bool"] = DBLua::InitVar;
+
+	DatabaseLoader::dl_lua["init_string"] = DBLua::InitVar;
+
+	DatabaseLoader::dl_lua["set_number"] = DBLua::SetVar;
+
+	DatabaseLoader::dl_lua["set_bool"] = DBLua::SetVar;
+
+	DatabaseLoader::dl_lua["set_string"] = DBLua::SetVar;
+
+	DatabaseLoader::dl_lua["get_number"] = DBLua::GetDouble;
+
+	DatabaseLoader::dl_lua["get_bool"] = DBLua::GetBool;
+
+	DatabaseLoader::dl_lua["get_string"] = DBLua::GetString;
+
+	DatabaseLoader::dl_lua["custom_sprite"] = DBLua::GetCustomSprite;
+
+	DatabaseLoader::dl_lua["custom_sound"] = DBLua::GetCustomSound;
+
+	g_YYTKInterface->PrintInfo("[Database Loader] Built-in functions loaded!");
+
+	string dir = "C:/Program Files (x86)/Steam/steamapps/common/Star of Providence/DatabaseLoader/Mods";
+
+	Files::MakeDirectory(dir);
+
+	vector<string> filesystem = Files::GetFilesOfType(dir, ".lua");
+
+	for (size_t i = 0; i < filesystem.size(); i++)
+	{
+		dl_lua.script_file(filesystem[i]);
+	}
 
 	yytk_interface->CreateCallback(
 		Module,
 		YYTK::EVENT_FRAME,
 		ObjectBehaviorRun,
 		0);
-	
+
 	return AURIE_SUCCESS;
 }

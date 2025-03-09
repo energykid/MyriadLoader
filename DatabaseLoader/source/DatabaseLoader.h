@@ -33,24 +33,19 @@ namespace DatabaseLoader
 
 		virtual void SetVariable(int inst, string varName, sol::object value) = 0;
 
-		virtual int GetInstanceID(int inst) = 0;
+		virtual double GetInstanceID(double inst) = 0;
 
-		virtual int GetInt(int inst, string varName) = 0;
+		virtual double GetNumber(double inst, string varName) = 0;
 
-		virtual bool GetBool(int inst, string varName) = 0;
+		virtual bool GetBool(double inst, string varName) = 0;
 
-		virtual int GetSound(string path) = 0;
+		virtual double GetSound(string path) = 0;
 
-		virtual int GetSprite(string path, int imgnum, int xorig, int yorig) = 0;
+		virtual double GetSprite(string path, int imgnum, int xorig, int yorig) = 0;
 
-		virtual RValue SpawnBasicParticle(int x, int y, int sprite) = 0;
+		virtual RValue SpawnBasicParticle(int x, int y, double sprite) = 0;
 
-		virtual int SpawnParticle(int x, int y, int xvel, int yvel, int sprite) = 0;
-
-		virtual void InvokeWithObjectIndex(
-			string Object,
-			sol::protected_function Method
-		) = 0;
+		virtual double SpawnParticle(double x, double y, double xvel, double yvel, double sprite) = 0;
 	};
 
 	class DLInterfaceImpl : public DLInterface
@@ -75,27 +70,24 @@ namespace DatabaseLoader
 
 		void SetVariable(int inst, string varName, sol::object value) override final;
 
-		int GetInstanceID(int inst) override final;
+		double GetInstanceID(double inst) override final;
 
-		int GetInt(int inst, string varName) override final;
+		double GetNumber(double inst, string varName) override final;
 
-		bool GetBool(int inst, string varName) override final;
+		bool GetBool(double inst, string varName) override final;
 
-		int GetSound(string path) override final;
+		double GetSound(string path) override final;
 
-		int GetSprite(string path, int imgnum, int xorig, int yorig) override final;
+		double GetSprite(string path, int imgnum, int xorig, int yorig) override final;
 
-		RValue SpawnBasicParticle(int x, int y, int sprite) override final;
+		RValue SpawnBasicParticle(int x, int y, double sprite) override final;
 
-		int SpawnParticle(int x, int y, int xvel, int yvel, int sprite) override final;
-
-		void InvokeWithObjectIndex(
-			string Object,
-			sol::protected_function Method
-		) override final;
+		double SpawnParticle(double x, double y, double xvel, double yvel, double sprite) override final;
 	};
 
 	inline DLInterfaceImpl g_ModuleInterface;
 
 	inline YYTKInterface* g_YYTKInterface;
+
+	static inline sol::state dl_lua;
 }

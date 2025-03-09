@@ -72,10 +72,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>C:\Program Files (x86)\Steam\steamapps\common\Star of Providence\mods\Aurie</OutDir>
-    <IncludePath>$(ProjectDir)include;</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)lib;</LibraryPath>
+    <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
+    <IncludePath>$(ProjectDir)include;F:\includes\lua54\include;F:\includes\sol3\include;</IncludePath>
+    <LibraryPath>;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <ExternalIncludePath>F:\All Downloads\lua-5.4.7;$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
+    <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir)include;F:\includes\lua54\include;F:\includes\sol3\include;</IncludePath>
+    <LibraryPath>;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+    <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>false</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -110,6 +123,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -142,54 +156,30 @@
       </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);lua54.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\YYToolkit\Shared.cpp" />
     <ClCompile Include="source\DatabaseLoader.cpp" />
+    <ClCompile Include="source\DBLua.cpp" />
     <ClCompile Include="source\Files.cpp" />
     <ClCompile Include="source\ModuleMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Aurie\shared.hpp" />
     <ClInclude Include="include\FunctionWrapper\FunctionWrapper.hpp" />
-    <ClInclude Include="include\lua\lapi.h" />
-    <ClInclude Include="include\lua\lauxlib.h" />
-    <ClInclude Include="include\lua\lcode.h" />
-    <ClInclude Include="include\lua\lctype.h" />
-    <ClInclude Include="include\lua\ldebug.h" />
-    <ClInclude Include="include\lua\ldo.h" />
-    <ClInclude Include="include\lua\lfunc.h" />
-    <ClInclude Include="include\lua\lgc.h" />
-    <ClInclude Include="include\lua\ljumptab.h" />
-    <ClInclude Include="include\lua\llex.h" />
-    <ClInclude Include="include\lua\llimits.h" />
-    <ClInclude Include="include\lua\lmem.h" />
-    <ClInclude Include="include\lua\lobject.h" />
-    <ClInclude Include="include\lua\lopcodes.h" />
-    <ClInclude Include="include\lua\lopnames.h" />
-    <ClInclude Include="include\lua\lparser.h" />
-    <ClInclude Include="include\lua\lprefix.h" />
-    <ClInclude Include="include\lua\lstate.h" />
-    <ClInclude Include="include\lua\lstring.h" />
-    <ClInclude Include="include\lua\ltable.h" />
-    <ClInclude Include="include\lua\ltm.h" />
-    <ClInclude Include="include\lua\lua.h" />
-    <ClInclude Include="include\lua\lua.hpp" />
-    <ClInclude Include="include\lua\luaconf.h" />
-    <ClInclude Include="include\lua\lualib.h" />
-    <ClInclude Include="include\lua\lundump.h" />
-    <ClInclude Include="include\lua\lvm.h" />
-    <ClInclude Include="include\lua\lzio.h" />
-    <ClInclude Include="include\sol\config.hpp" />
-    <ClInclude Include="include\sol\forward.hpp" />
+    <ClInclude Include="include\lauxlib.h" />
+    <ClInclude Include="include\lua.h" />
+    <ClInclude Include="include\lua.hpp" />
+    <ClInclude Include="include\luaconf.h" />
+    <ClInclude Include="include\lualib.h" />
     <ClInclude Include="include\sol\lapi.h" />
     <ClInclude Include="include\sol\lauxlib.h" />
     <ClInclude Include="include\sol\lcode.h" />
@@ -218,20 +208,19 @@
     <ClInclude Include="include\sol\lundump.h" />
     <ClInclude Include="include\sol\lvm.h" />
     <ClInclude Include="include\sol\lzio.h" />
-    <ClInclude Include="include\sol\sol.hpp" />
     <ClInclude Include="include\YYToolkit\Shared.hpp" />
     <ClInclude Include="source\assert.hpp" />
     <ClInclude Include="source\DatabaseLoader.h" />
+    <ClInclude Include="source\DBLua.h" />
     <ClInclude Include="source\Files.h" />
     <ClInclude Include="source\ModuleMain.h" />
     <ClInclude Include="source\WeaponIDs.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="lib\lua54.dll" />
-    <None Include="lib\lua54.pdb" />
+    <None Include="include\lua54.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\lua54.lib" />
+    <Library Include="include\lua54.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
