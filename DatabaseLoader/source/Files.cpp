@@ -8,14 +8,14 @@
 using namespace std;
 using namespace std::filesystem;
 
-vector<string> DatabaseLoader::Files::GetFilesOfType(const string& dir_path, const string& extension)
+vector<filesystem::path> DatabaseLoader::Files::GetFilesOfType(const string& dir_path, const string& extension)
 {
-    vector<string> files; 
+    vector<path> files;
     for (recursive_directory_iterator i(dir_path), end; i != end; ++i)
     {
         if (!is_directory(i->path()) && i->path().filename().extension() == extension)
         {
-            files.push_back(i->path().string());
+            files.push_back(i->path());
         }
     }
     return files;

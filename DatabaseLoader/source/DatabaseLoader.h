@@ -1,7 +1,7 @@
 #pragma once
 
 #include "sol/sol.hpp"
-#include "YYToolkit/Shared.hpp"
+#include "YYToolkit/YYTK_Shared.hpp"
 #include "Aurie/shared.hpp"
 
 using namespace std;
@@ -84,10 +84,13 @@ namespace DatabaseLoader
 
 		double SpawnParticle(double x, double y, double xvel, double yvel, double sprite) override final;
 	};
+	inline AurieModule* g_LocalModule;
 
 	inline DLInterfaceImpl g_ModuleInterface;
 
 	inline YYTKInterface* g_YYTKInterface;
 
 	static inline sol::state dl_lua;
+
+	static inline vector<RValue> CustomMusic;
 }

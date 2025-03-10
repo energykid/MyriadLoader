@@ -40,21 +40,21 @@ double DatabaseLoader::DLInterfaceImpl::GetInstanceID(double inst)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
 	inst,
-	"index" }).AsReal();
+	"index" }).ToDouble();
 }
 
 double DatabaseLoader::DLInterfaceImpl::GetNumber(double inst, string varName)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
 	inst,
-	varName }).AsReal();
+	(string_view)varName }).ToDouble();
 }
 
 bool DatabaseLoader::DLInterfaceImpl::GetBool(double inst, string varName)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
 	inst,
-	varName }).AsBool();
+	(string_view)varName }).ToBoolean();
 }
 
 /// <summary>
@@ -66,7 +66,7 @@ bool DatabaseLoader::DLInterfaceImpl::GetBool(double inst, string varName)
 /// <returns></returns>
 double DatabaseLoader::DLInterfaceImpl::GetSound(string path)
 {
-	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "DatabaseLoader/" + path }).AsReal();
+	return g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/" + path) }).ToDouble();
 }
 
 /// <summary>
@@ -79,34 +79,12 @@ double DatabaseLoader::DLInterfaceImpl::GetSound(string path)
 /// <returns></returns>
 double DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int xorig, int yorig)
 {
-	return g_YYTKInterface->CallBuiltin("sprite_add", { "DatabaseLoader/" + path, imgnum, false, false, xorig, yorig }).AsReal();
+	return g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("DatabaseLoader/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
 }
 
 RValue DatabaseLoader::DLInterfaceImpl::SpawnBasicParticle(int x, int y, double sprite)
 {
-	RValue part = g_YYTKInterface->CallBuiltin(
-		"instance_create_depth",
-		{
-			x,
-			y,
-			0,
-			g_YYTKInterface->CallBuiltin(
-			"asset_get_index",
-				{"obj_generic_particle"}
-			),
-		}
-	);
-
-	g_YYTKInterface->CallBuiltin(
-		"variable_instance_set",
-		{
-			part,
-			"sprite_index",
-			sprite
-		}
-	);
-
-	return part;
+	return 0;
 }
 
 double DatabaseLoader::DLInterfaceImpl::SpawnParticle(double x, double y, double xvel, double yvel, double sprite)
@@ -130,5 +108,5 @@ double DatabaseLoader::DLInterfaceImpl::SpawnParticle(double x, double y, double
 		}
 	);
 
-	return part.AsReal();
+	return part.ToDouble();
 }

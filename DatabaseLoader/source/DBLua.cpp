@@ -1,7 +1,8 @@
 #include "DatabaseLoader.h"
 #include "Aurie/shared.hpp"
-#include "YYToolkit/Shared.hpp"
+#include "YYToolkit/YYTK_Shared.hpp"
 #include "DBLua.h"
+#include "GMWrappers.h"
 #include <map>
 #include "sol/sol.hpp"
 
@@ -18,7 +19,7 @@ RValue ObjectToValue(sol::object obj)
 	case sol::lua_type_of_v<bool>:
 		return obj.as<bool>();
 	case sol::lua_type_of_v<string>:
-		return obj.as<string>();
+		return obj.as<string_view>();
 	}
 }
 RValue DatabaseLoader::DBLua::CallBuiltinLua(
@@ -68,7 +69,7 @@ AurieStatus DatabaseLoader::DBLua::CallBuiltinExLua(
 	if (m_BuiltinFunctionCache.contains(FunctionName))
 	{
 		m_BuiltinFunctionCache.at(FunctionName)(
-			&Result,
+			Result,
 			SelfInstance,
 			OtherInstance,
 			static_cast<int>(Arguments.size()),
@@ -101,7 +102,7 @@ AurieStatus DatabaseLoader::DBLua::CallBuiltinExLua(
 	);
 
 	function(
-		&Result,
+		Result,
 		SelfInstance,
 		OtherInstance,
 		static_cast<int>(Arguments.size()),
@@ -115,13 +116,13 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_
 {
 	RValue object_index = g_YYTKInterface->CallBuiltin(
 		"asset_get_index",
-		{ Object }
+		{ (string_view)Object }
 	);
 
 	int64_t object_count = static_cast<int64_t>(g_YYTKInterface->CallBuiltin(
 		"instance_number",
 		{ object_index }
-	).AsReal());
+	).ToDouble());
 
 	for (int64_t i = 0; i < object_count; i++)
 	{
@@ -133,7 +134,7 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_
 			}
 		);
 
-		sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).AsReal());
+		sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
 		if (!result.valid())
 		{
 			sol::error error = result;
@@ -179,12 +180,12 @@ void DatabaseLoader::DBLua::InitDouble(double inst, string varName, double val)
 {
 	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {
 		inst,
-		varName
-		}).AsBool())
+		(string_view)varName
+		}).ToBoolean())
 	{
 		g_YYTKInterface->CallBuiltin("variable_instance_set", {
 		inst,
-		varName,
+		(string_view)varName,
 		val
 			});
 	}
@@ -194,12 +195,12 @@ void DatabaseLoader::DBLua::InitBool(double inst, string varName, bool val)
 {
 	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {
 		inst,
-		varName
-		}).AsBool())
+		(string_view)varName
+		}).ToBoolean())
 	{
 		g_YYTKInterface->CallBuiltin("variable_instance_set", {
 		inst,
-		varName,
+		(string_view)varName,
 		val
 			});
 	}
@@ -209,13 +210,13 @@ void DatabaseLoader::DBLua::InitString(double inst, string varName, string val)
 {
 	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {
 		inst,
-		varName
-		}).AsBool())
+		(string_view)varName
+		}).ToBoolean())
 	{
 		g_YYTKInterface->CallBuiltin("variable_instance_set", {
 		inst,
-		varName,
-		val
+		(string_view)varName,
+		(string_view)val
 			});
 	}
 }
@@ -224,7 +225,7 @@ void DatabaseLoader::DBLua::SetDouble(double inst, string varName, double val)
 {
 	g_YYTKInterface->CallBuiltin("variable_instance_set", {
 	inst,
-	varName,
+	(string_view)varName,
 	val
 		});
 }
@@ -233,7 +234,7 @@ void DatabaseLoader::DBLua::SetBool(double inst, string varName, bool val)
 {
 	g_YYTKInterface->CallBuiltin("variable_instance_set", {
 	inst,
-	varName,
+	(string_view)varName,
 	val
 		});
 }
@@ -242,8 +243,8 @@ void DatabaseLoader::DBLua::SetString(double inst, string varName, string val)
 {
 	g_YYTKInterface->CallBuiltin("variable_instance_set", {
 	inst,
-	varName,
-	val
+	(string_view)varName,
+	(string_view)val
 		});
 }
 
@@ -251,39 +252,125 @@ double DatabaseLoader::DBLua::GetDouble(double inst, string varName)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
 		inst,
-		varName
-		}).AsReal();
+		(string_view)varName
+		}).ToDouble();
 }
 
 bool DatabaseLoader::DBLua::GetBool(double inst, string varName)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
 		inst,
-		varName
-		}).AsBool();
+		(string_view)varName
+		}).ToBoolean();
 }
 
 string DatabaseLoader::DBLua::GetString(double inst, string varName)
 {
 	return (string)g_YYTKInterface->CallBuiltin("variable_instance_get", {
 		inst,
-		varName
-		}).AsString();
+		(string_view)varName
+		}).ToString();
 }
 
 double DatabaseLoader::DBLua::GetCustomSound(string path)
 {
-	return g_YYTKInterface->CallBuiltin("audio_create_stream", { "DatabaseLoader/Mods/" + path }).AsReal();
+	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
+
+	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("snd_list"), snd });
+
+	return snd.ToDouble();
+}
+
+double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
+{
+	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
+
+	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "dbl_CustomMusicList" }))
+	{
+		g_YYTKInterface->CallBuiltin("variable_global_set", { "dbl_CustomMusicList", g_YYTKInterface->CallBuiltin("array_create", {}) });
+	}
+	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "dbl_CustomMusicList" }), snd});
+
+	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
+	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
+
+	return snd.ToDouble();
+}
+
+void DatabaseLoader::DBLua::UnlockSong(double songName)
+{
+	string name = g_YYTKInterface->CallBuiltin("audio_get_name", {songName}).ToString();
+
+	GMWrappers::CallGameScript("gml_Script_music_unlock", { (string_view)name });
 }
 
 double DatabaseLoader::DBLua::GetCustomSprite(string path, double imgnum, double xorig, double yorig)
 {
-	return g_YYTKInterface->CallBuiltin("sprite_add", { "DatabaseLoader/Mods/" + path, imgnum, false, false, xorig, yorig }).AsReal();
+	return g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("DatabaseLoader/Mods/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
+}
+
+void DatabaseLoader::DBLua::DoSound(double soundType, double x)
+{
+	GMWrappers::CallGameScript("gml_Script_sound_do", { soundType, x });
+}
+
+void DatabaseLoader::DBLua::DoSoundExt(double soundType, double pitch, double gain, double x)
+{
+	GMWrappers::CallGameScript("gml_Script_sound_do_ext", { soundType, pitch, gain, x });
+}
+
+double DatabaseLoader::DBLua::GetAsset(string name)
+{
+	return g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)name }).ToDouble();
+}
+
+double DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
+{
+	vector<RValue> vals = {};
+
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		vals.push_back(args[i]);
+	}
+
+	return g_YYTKInterface->CallBuiltin(name.c_str(), vals).ToDouble();
+}
+
+void DatabaseLoader::DBLua::CallGameFunction(string name, sol::table args)
+{
+	vector<RValue> vals = {};
+
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		vals.push_back(args[i]);
+	}
+
+	GMWrappers::CallGameScript(name.c_str(), vals);
 }
 
 double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, double yvel, double sprite)
 {
-	RValue part = g_ModuleInterface.SpawnBasicParticle(x, y, sprite);
+	RValue part = g_YYTKInterface->CallBuiltin(
+		"instance_create_depth",
+		{
+			x,
+			y,
+			0,
+			g_YYTKInterface->CallBuiltin(
+			"asset_get_index",
+				{"obj_generic_particle"}
+			),
+		}
+	);
+
+	g_YYTKInterface->CallBuiltin(
+		"variable_instance_set",
+		{
+			part,
+			"sprite_index",
+			sprite
+		}
+	);
 
 	g_YYTKInterface->CallBuiltin(
 		"variable_instance_set",
@@ -302,5 +389,5 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 		}
 	);
 
-	return part.AsReal();
+	return part.ToDouble();
 }
