@@ -58,15 +58,18 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CIn
 {
 	auto original_function = reinterpret_cast<decltype(&JukeboxInjection)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoopFromStart"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
-	
-	RValue snd = *Arguments[0];
-	RValue Sound = g_YYTKInterface->CallBuiltin("audio_play_sound", { snd, 0, true });
-	GMWrappers::SetGlobal("current_music", Sound);
-	g_YYTKInterface->CallBuiltin("audio_sound_pitch", { GMWrappers::GetGlobal("current_music"), 1 });
-	GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { snd }));
-	GMWrappers::SetGlobal("loop_length", 0); // todo: add custom loop length to music
 
-	Result = Sound;
+	RValue snd = *Arguments[0];
+	
+	if (g_YYTKInterface->CallBuiltin("array_contains", { GMWrappers::GetGlobal("dbl_CustomMusicList"), snd }).ToBoolean())
+	{
+		RValue Sound = g_YYTKInterface->CallBuiltin("audio_play_sound", { snd, 0, true });
+		GMWrappers::SetGlobal("current_music", Sound);
+		g_YYTKInterface->CallBuiltin("audio_sound_pitch", { GMWrappers::GetGlobal("current_music"), 1 });
+		GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { snd }));
+		GMWrappers::SetGlobal("loop_length", 0); // todo: add custom loop length to music
+		Result = Sound;
+	}
 
 	return Result;
 }

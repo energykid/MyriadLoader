@@ -20,6 +20,8 @@ using namespace DatabaseLoader;
 static DLInterface* dl_interface = nullptr;
 static YYTK::YYTKInterface* yytk_interface = nullptr;
 
+static sol::state modState;
+
 static sol::table allBehaviors;
 
 static vector<sol::state> allModStates;
@@ -89,7 +91,7 @@ sol::state GetModState()
 {
 	sol::state inState;
 
-	inState.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);
+	inState.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);\
 
 	inState["debug_out"] = [](string text) {
 		yytk_interface->PrintInfo(text);
@@ -100,6 +102,8 @@ sol::state GetModState()
 	inState["object_behaviors"][0] = sol::nil;
 
 	inState["new_object_behavior"] = NewObjectBehavior;
+
+	inState["all_enemies"] = inState.create_table();
 
 	inState["spawn_particle"] = DBLua::SpawnParticle;
 
@@ -143,6 +147,10 @@ sol::state GetModState()
 
 	inState["play_sound_ext"] = DBLua::DoSoundExt;
 
+	inState["draw_sprite"] = DBLua::DrawSprite;
+
+	inState["draw_sprite_ext"] = DBLua::DrawSpriteExt;
+
 	return inState;
 }
 
@@ -179,12 +187,26 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	Files::MakeDirectory(dir);
 
-	vector<filesystem::path> filesystem = Files::GetFilesOfType(dir, ".lua");
+	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
 
-	for (size_t i = 0; i < filesystem.size(); i++)
+	for (size_t i = 0; i < mods.size(); i++)
 	{
-		g_YYTKInterface->PrintInfo("[Database Loader] File '" + filesystem[i].filename().string() + "' loaded...");
-		dl_lua.script_file(filesystem[i].string());
+		vector<filesystem::path> filesystem = Files::GetFilesOfType(mods[i].string(), ".lua");
+
+		modState = GetModState();
+
+		for (size_t i = 0; i < filesystem.size(); i++)
+		{
+			g_YYTKInterface->PrintInfo("[Database Loader] File '" + filesystem[i].filename().string() + "' loaded...");
+			modState.script_file(filesystem[i].string());
+		}
+
+		sol::table behavs = modState["object_behaviors"];
+
+		for (size_t i = 0; i < behavs.size(); i++)
+		{
+			allBehaviors.add(behavs[i]);
+		}
 	}
 
 	yytk_interface->CreateCallback(

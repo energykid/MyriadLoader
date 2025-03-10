@@ -17,8 +17,6 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
-
-
 		static RValue& MusicDo(
 			IN CInstance* Self,
 			IN CInstance* Other,

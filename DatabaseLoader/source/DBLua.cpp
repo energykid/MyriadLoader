@@ -512,3 +512,19 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 
 	return part.ToDouble();
 }
+
+void DatabaseLoader::DBLua::DrawSprite(double x, double y, double spriteID, double frameNumber)
+{
+	g_YYTKInterface->CallBuiltin("draw_sprite", { spriteID, frameNumber, x, y });
+}
+
+void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha)
+{
+	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
+}
+
+void DatabaseLoader::DBLua::CustomEnemy(string name)
+{
+
+}
+

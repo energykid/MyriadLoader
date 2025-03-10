@@ -167,6 +167,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\YYToolkit\YYTK_Shared_Types.cpp" />
+    <ClCompile Include="source\CustomEnemies.cpp" />
     <ClCompile Include="source\DatabaseLoader.cpp" />
     <ClCompile Include="source\DBLua.cpp" />
     <ClCompile Include="source\Files.cpp" />
@@ -218,6 +219,7 @@
     <ClInclude Include="include\YYToolkit\YYTK_Shared_Interface.hpp" />
     <ClInclude Include="include\YYToolkit\YYTK_Shared_Types.hpp" />
     <ClInclude Include="source\assert.hpp" />
+    <ClInclude Include="source\CustomEnemies.h" />
     <ClInclude Include="source\DatabaseLoader.h" />
     <ClInclude Include="source\DBLua.h" />
     <ClInclude Include="source\Files.h" />

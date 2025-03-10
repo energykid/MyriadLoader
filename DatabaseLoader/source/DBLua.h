@@ -37,6 +37,11 @@ namespace DatabaseLoader
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
 
+		static void DrawSprite(double x, double y, double spriteID, double frameNumber);
+		static void DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha);
+
+		static void CustomEnemy(string name);
+
 		static RValue CallBuiltinLua(
 			IN const char* FunctionName,
 			IN std::vector<RValue> Arguments
