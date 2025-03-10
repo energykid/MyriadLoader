@@ -11,7 +11,12 @@ using namespace YYTK;
 
 RValue DatabaseLoader::GMWrappers::GetGlobal(string name)
 {
-	return g_YYTKInterface->CallBuiltin("variable_global_get", { (string_view)name });
+	return (g_YYTKInterface->CallBuiltin("variable_global_get", { (string_view)name }));
+}
+
+void DatabaseLoader::GMWrappers::SetGlobal(string name, RValue val)
+{
+	g_YYTKInterface->CallBuiltin("variable_global_set", { (string_view)name, val });
 }
 
 RValue DatabaseLoader::GMWrappers::CallGameScript(

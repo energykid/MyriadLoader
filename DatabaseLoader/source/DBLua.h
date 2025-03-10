@@ -32,7 +32,7 @@ namespace DatabaseLoader
 		static void DoSoundExt(double soundType, double pitch, double gain, double x);
 
 		static double GetAsset(string name);
-		static double CallFunction(string name, sol::table args);
+		static void CallFunction(string name, sol::table args);
 		static void CallGameFunction(string name, sol::table args);
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);

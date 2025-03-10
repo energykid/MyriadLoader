@@ -17,5 +17,28 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
+
+
+		static RValue& MusicDo(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& MusicDoLoop(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& MusicDoLoopFromStart(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
 	};
 }

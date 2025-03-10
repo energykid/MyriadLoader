@@ -3,6 +3,7 @@
 #include "YYToolkit/YYTK_Shared.hpp"
 #include "DBLua.h"
 #include "GMWrappers.h"
+#include "Files.h"
 #include <map>
 #include "sol/sol.hpp"
 
@@ -144,6 +145,14 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_
 	}
 }
 
+/***
+Initialize a number, boolean, or string, local to the instance ID provided. Doesn't run any code if the variable exists already.
+@function init_var
+@param inst the instance ID to set the variable to
+@param varName the name of the variable to set
+@param val the value to set the variable to
+@return void
+*/
 void DatabaseLoader::DBLua::InitVar(double inst, string varName, sol::object val)
 {
 	switch (val.get_type())
@@ -160,6 +169,15 @@ void DatabaseLoader::DBLua::InitVar(double inst, string varName, sol::object val
 	}
 }
 
+
+/***
+Set a number, boolean, or string, local to the instance ID provided. Will work with GameMaker built-in variables too.
+@function set_var
+@param inst the instance ID to set the variable to
+@param varName the name of the variable to set
+@param val the value to set the variable to
+@return void
+*/
 void DatabaseLoader::DBLua::SetVar(double inst, string varName, sol::object val)
 {
 	switch (val.get_type())
@@ -248,6 +266,14 @@ void DatabaseLoader::DBLua::SetString(double inst, string varName, string val)
 		});
 }
 
+
+/***
+Retrieve a number local to the instance provided. Can only retrieve numbers.
+@function get_double
+@param inst the instance ID to get the variable from
+@param varName the name of the variable to get
+@return the value retrieved
+*/
 double DatabaseLoader::DBLua::GetDouble(double inst, string varName)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
@@ -256,6 +282,13 @@ double DatabaseLoader::DBLua::GetDouble(double inst, string varName)
 		}).ToDouble();
 }
 
+/***
+Retrieve a boolean local to the instance provided. Can only retrieve booleans.
+@function get_bool
+@param inst the instance ID to get the variable from
+@param varName the name of the variable to get
+@return the value retrieved
+*/
 bool DatabaseLoader::DBLua::GetBool(double inst, string varName)
 {
 	return g_YYTKInterface->CallBuiltin("variable_instance_get", {
@@ -264,6 +297,13 @@ bool DatabaseLoader::DBLua::GetBool(double inst, string varName)
 		}).ToBoolean();
 }
 
+/***
+Retrieve a string local to the instance provided. Can only retrieve string.
+@function get_string
+@param inst the instance ID to get the variable from
+@param varName the name of the variable to get
+@return the value retrieved
+*/
 string DatabaseLoader::DBLua::GetString(double inst, string varName)
 {
 	return (string)g_YYTKInterface->CallBuiltin("variable_instance_get", {
@@ -272,6 +312,12 @@ string DatabaseLoader::DBLua::GetString(double inst, string varName)
 		}).ToString();
 }
 
+/***
+Register a custom sound effect from the provided file path.
+@function init_var
+@param path the path (starting at DatabaseLoader/Mods/) to get the sound from
+@return the sound ID assigned to the provided file
+*/
 double DatabaseLoader::DBLua::GetCustomSound(string path)
 {
 	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
@@ -281,15 +327,29 @@ double DatabaseLoader::DBLua::GetCustomSound(string path)
 	return snd.ToDouble();
 }
 
+/***
+Register a custom music piece from the provided file path, then add it to the jukebox.
+@function custom_music
+@param path the path (starting at DatabaseLoader/Mods/) to get the sound from
+@param musicName the name this music piece will have at the jukebox
+@return the sound ID assigned to the provided file
+*/
 double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 {
+	RValue progdir;
+
+	CInstance** inst = nullptr;
+	g_YYTKInterface->GetGlobalInstance(inst);
+
+	g_YYTKInterface->GetBuiltin("program_directory", reinterpret_cast<CInstance*>(inst), 0, progdir);
+
 	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
 
 	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "dbl_CustomMusicList" }))
 	{
 		g_YYTKInterface->CallBuiltin("variable_global_set", { "dbl_CustomMusicList", g_YYTKInterface->CallBuiltin("array_create", {}) });
 	}
-	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "dbl_CustomMusicList" }), snd});
+	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "dbl_CustomMusicList" }), snd });
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
@@ -297,6 +357,12 @@ double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 	return snd.ToDouble();
 }
 
+/***
+Unlock the provided music piece at the jukebox.
+@function unlock_song
+@param songName the sound ID assigned to the song to unlock
+@return void
+*/
 void DatabaseLoader::DBLua::UnlockSong(double songName)
 {
 	string name = g_YYTKInterface->CallBuiltin("audio_get_name", {songName}).ToString();
@@ -304,27 +370,65 @@ void DatabaseLoader::DBLua::UnlockSong(double songName)
 	GMWrappers::CallGameScript("gml_Script_music_unlock", { (string_view)name });
 }
 
+/***
+Unlock the provided music piece at the jukebox.
+@function custom_sprite
+@param path the path (starting at DatabaseLoader/Mods/) to get the sprite from 
+@param imgnum number of frames in the sprite (1 if still image)
+@param xorig the x position in pixels of the sprite's origin 
+@param yorig the y position in pixels of the sprite's origin  
+@return the sprite ID assigned to the texture
+*/
 double DatabaseLoader::DBLua::GetCustomSprite(string path, double imgnum, double xorig, double yorig)
 {
 	return g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("DatabaseLoader/Mods/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
 }
 
+/***
+Plays a sound at the given X position.
+@function do_sound
+@param soundType the assigned ID of the sound
+@param x the x position of the sound (for directional audio)
+@return void
+*/
 void DatabaseLoader::DBLua::DoSound(double soundType, double x)
 {
 	GMWrappers::CallGameScript("gml_Script_sound_do", { soundType, x });
 }
 
+/***
+Plays a sound at the given X position.
+@function do_sound_ext
+@param soundType the assigned ID of the sound
+@param pitch the pitch to play the sound with (1 being default)
+@param gain the gain of the sound (from 0 to 1)
+@param x the x position of the sound (for directional audio)
+@return void
+*/
 void DatabaseLoader::DBLua::DoSoundExt(double soundType, double pitch, double gain, double x)
 {
 	GMWrappers::CallGameScript("gml_Script_sound_do_ext", { soundType, pitch, gain, x });
 }
 
+/***
+Retrieves the asset ID with the given name.
+@function get_asset
+@param name the name of the asset to get
+@return the asset ID retrieved
+*/
 double DatabaseLoader::DBLua::GetAsset(string name)
 {
 	return g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)name }).ToDouble();
 }
 
-double DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
+/***
+Calls a built-in GameMaker function. Returns void.
+@function call_gm_function
+@param name the name of the function to call as a string
+@param args a table containing the arguments to pass in
+@return void
+*/
+void DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
 {
 	vector<RValue> vals = {};
 
@@ -333,9 +437,16 @@ double DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
 		vals.push_back(args[i]);
 	}
 
-	return g_YYTKInterface->CallBuiltin(name.c_str(), vals).ToDouble();
+	g_YYTKInterface->CallBuiltin(name.c_str(), vals).ToDouble();
 }
 
+/***
+Calls a Star of Providence function. Returns void.
+@function call_game_function
+@param name the name of the function to call as a string
+@param args a table containing the arguments to pass in
+@return void
+*/
 void DatabaseLoader::DBLua::CallGameFunction(string name, sol::table args)
 {
 	vector<RValue> vals = {};
@@ -348,6 +459,16 @@ void DatabaseLoader::DBLua::CallGameFunction(string name, sol::table args)
 	GMWrappers::CallGameScript(name.c_str(), vals);
 }
 
+/***
+Spawns a customizable particle.
+@function spawn_particle
+@param x the x position to spawn the particle at
+@param y the y position to spawn the particle at
+@param xvel the x velocity to spawn the particle with
+@param yvel the y velocity to spawn the particle with
+@param sprite the ID of the sprite to spawn the particle with (can be gained with custom_sprite)
+@return the instance ID of the particle spawned
+*/
 double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, double yvel, double sprite)
 {
 	RValue part = g_YYTKInterface->CallBuiltin(

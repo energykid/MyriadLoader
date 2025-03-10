@@ -22,6 +22,8 @@ static YYTK::YYTKInterface* yytk_interface = nullptr;
 
 static sol::table allBehaviors;
 
+static vector<sol::state> allModStates;
+
 string GetUserDirectory() {
 	char path[MAX_PATH];
 	if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, path) == S_OK) {
@@ -48,11 +50,11 @@ void ObjectBehaviorRun(FWFrame& context)
 
 sol::table NewObjectBehavior(string objectName, sol::protected_function func)
 {
-	static sol::table allBehaviors = DatabaseLoader::dl_lua["object_behaviors"];
+	static sol::table allBehaviors = dl_lua["object_behaviors"];
 
 	if (allBehaviors)
 	{
-		sol::table behav = DatabaseLoader::dl_lua.create_table();
+		sol::table behav = dl_lua.create_table();
 		behav["objectName"] = objectName;
 		behav["stepFunc"] = func;
 
@@ -83,6 +85,67 @@ RValue ObjectToRValue(sol::object obj)
 	return 0;
 }
 
+sol::state GetModState()
+{
+	sol::state inState;
+
+	inState.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);
+
+	inState["debug_out"] = [](string text) {
+		yytk_interface->PrintInfo(text);
+		};
+
+	inState["object_behaviors"] = inState.create_table();
+
+	inState["object_behaviors"][0] = sol::nil;
+
+	inState["new_object_behavior"] = NewObjectBehavior;
+
+	inState["spawn_particle"] = DBLua::SpawnParticle;
+
+	inState["init_var"] = DBLua::InitVar;
+
+	inState["set_var"] = DBLua::SetVar;
+
+	inState["init_number"] = DBLua::InitVar;
+
+	inState["init_bool"] = DBLua::InitVar;
+
+	inState["init_string"] = DBLua::InitVar;
+
+	inState["set_number"] = DBLua::SetVar;
+
+	inState["set_bool"] = DBLua::SetVar;
+
+	inState["set_string"] = DBLua::SetVar;
+
+	inState["get_number"] = DBLua::GetDouble;
+
+	inState["get_bool"] = DBLua::GetBool;
+
+	inState["get_string"] = DBLua::GetString;
+
+	inState["custom_sprite"] = DBLua::GetCustomSprite;
+
+	inState["custom_sound"] = DBLua::GetCustomSound;
+
+	inState["custom_music"] = DBLua::GetCustomMusic;
+
+	inState["unlock_song"] = DBLua::UnlockSong;
+
+	inState["get_asset"] = DBLua::GetAsset;
+
+	inState["call_gm_function"] = DBLua::CallFunction;
+
+	inState["call_game_function"] = DBLua::CallGameFunction;
+
+	inState["play_sound"] = DBLua::DoSound;
+
+	inState["play_sound_ext"] = DBLua::DoSoundExt;
+
+	return inState;
+}
+
 EXPORTED AurieStatus ModuleInitialize(
 	IN AurieModule* Module,
 	IN const fs::path& ModulePath
@@ -106,65 +169,13 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	yytk_interface->PrintInfo("Database Loader has initialized!");
 
-	DatabaseLoader::dl_lua.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);
+	dl_lua = GetModState();
 
-	DatabaseLoader::dl_lua["debug_out"] = [](string text) {
-		yytk_interface->PrintInfo(text);
-		};
-
-	DatabaseLoader::dl_lua["object_behaviors"] = DatabaseLoader::dl_lua.create_table();
-
-	DatabaseLoader::dl_lua["object_behaviors"][0] = sol::nil;
-
-	allBehaviors = DatabaseLoader::dl_lua["object_behaviors"];
-
-	DatabaseLoader::dl_lua["new_object_behavior"] = NewObjectBehavior;
-
-	DatabaseLoader::dl_lua["spawn_particle"] = DBLua::SpawnParticle;
-
-	DatabaseLoader::dl_lua["init_var"] = DBLua::InitVar;
-
-	DatabaseLoader::dl_lua["set_var"] = DBLua::SetVar;
-
-	DatabaseLoader::dl_lua["init_number"] = DBLua::InitVar;
-
-	DatabaseLoader::dl_lua["init_bool"] = DBLua::InitVar;
-
-	DatabaseLoader::dl_lua["init_string"] = DBLua::InitVar;
-
-	DatabaseLoader::dl_lua["set_number"] = DBLua::SetVar;
-
-	DatabaseLoader::dl_lua["set_bool"] = DBLua::SetVar;
-
-	DatabaseLoader::dl_lua["set_string"] = DBLua::SetVar;
-
-	DatabaseLoader::dl_lua["get_number"] = DBLua::GetDouble;
-
-	DatabaseLoader::dl_lua["get_bool"] = DBLua::GetBool;
-
-	DatabaseLoader::dl_lua["get_string"] = DBLua::GetString;
-
-	DatabaseLoader::dl_lua["custom_sprite"] = DBLua::GetCustomSprite;
-
-	DatabaseLoader::dl_lua["custom_sound"] = DBLua::GetCustomSound;
-
-	DatabaseLoader::dl_lua["custom_music"] = DBLua::GetCustomMusic;
-
-	DatabaseLoader::dl_lua["unlock_song"] = DBLua::UnlockSong;
-
-	DatabaseLoader::dl_lua["get_asset"] = DBLua::GetAsset;
-
-	DatabaseLoader::dl_lua["call_gm_function"] = DBLua::CallFunction;
-
-	DatabaseLoader::dl_lua["call_game_function"] = DBLua::CallGameFunction;
-
-	DatabaseLoader::dl_lua["play_sound"] = DBLua::DoSound;
-
-	DatabaseLoader::dl_lua["play_sound_ext"] = DBLua::DoSoundExt;
+	allBehaviors = dl_lua["object_behaviors"];
 
 	g_YYTKInterface->PrintInfo("[Database Loader] Built-in functions loaded!");
 
-	string dir = "C:/Program Files (x86)/Steam/steamapps/common/Star of Providence/DatabaseLoader/Mods";
+	string dir = Files::GetModsDirectory();
 
 	Files::MakeDirectory(dir);
 
@@ -186,6 +197,9 @@ EXPORTED AurieStatus ModuleInitialize(
 	int script_index = 0;
 	PVOID original_function = nullptr;
 
+	TRoutine game_function = nullptr;
+	TRoutine original_builtin_function = nullptr;
+
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_music_jukebox_get_songs",
 		reinterpret_cast<PVOID*>(&script_data)
@@ -195,6 +209,42 @@ EXPORTED AurieStatus ModuleInitialize(
 		"Jukebox Injection",
 		script_data->m_Functions->m_ScriptFunction,
 		GMHooks::JukeboxInjection,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_do",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDo",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::MusicDo,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_do_loop",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDoLoop",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::MusicDoLoop,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_do_loop_from_start",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDoLoopFromStart",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::MusicDoLoopFromStart,
 		&original_function
 	);
 

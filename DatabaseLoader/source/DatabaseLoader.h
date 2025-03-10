@@ -90,7 +90,12 @@ namespace DatabaseLoader
 
 	inline YYTKInterface* g_YYTKInterface;
 
-	static inline sol::state dl_lua;
+	inline sol::state dl_lua;
 
-	static inline vector<RValue> CustomMusic;
+	class MusicType {
+	public:
+		MusicType(double num, const string name) : ID(num), Name(name) {}
+		double ID;
+		string Name;
+	};
 }
