@@ -49,7 +49,7 @@ static void RegisterData(sol::table data)
 
 	g_YYTKInterface->PrintWarning(data.get<string>("Name"));
 
-	dl_lua["all_behaviors"][tbl.size()] = data;
+	dl_lua["all_behaviors"][tbl.size() + 1] = data;
 }
 
 void ObjectBehaviorRun(FWFrame& context)
