@@ -38,5 +38,15 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
+		static RValue& EnemyDamage(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static void EnemyData(
+			FWCodeEvent& FunctionContext
+		);
 	};
 }

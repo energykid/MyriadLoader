@@ -20,11 +20,18 @@ using namespace DatabaseLoader;
 static DLInterface* dl_interface = nullptr;
 static YYTK::YYTKInterface* yytk_interface = nullptr;
 
-static sol::state modState;
+static sol::table CopyTableFromStateTo(sol::state& source, sol::state& target, sol::table table_to_copy) {
 
-static sol::table allBehaviors;
+	sol::table new_table = target.create_table();
+	for (auto it = table_to_copy.begin(); it != table_to_copy.end(); ++it) {
 
-static vector<sol::state> allModStates;
+		auto [key, value] = *it;
+
+		new_table.set(key, table_to_copy.copy(target)); // Recursively copy nested values if needed [6, 8]
+	}
+	return new_table;
+}
+
 
 string GetUserDirectory() {
 	char path[MAX_PATH];
@@ -36,37 +43,35 @@ string GetUserDirectory() {
 	}
 }
 
+static void RegisterData(sol::table data)
+{
+	sol::table tbl = dl_lua["all_behaviors"];
+
+	g_YYTKInterface->PrintWarning(data.get<string>("Name"));
+
+	dl_lua["all_behaviors"][tbl.size()] = data;
+}
+
 void ObjectBehaviorRun(FWFrame& context)
 {
 	UNREFERENCED_PARAMETER(context);
 
-	if (allBehaviors)
+	if (dl_lua["all_behaviors"])
 	{
-		for (double var = 1; var < allBehaviors.size() + 1; var++)
+		sol::table count = dl_lua["all_behaviors"];
+		for (double var = 0; var < count.size() + 1; var++)
 		{
-			sol::lua_table tbl = allBehaviors[var];
-			DBLua::InvokeWithObjectIndex(tbl["objectName"], tbl["stepFunc"]);
+			sol::table tbl = dl_lua["all_behaviors"][var];
+			if (dl_lua["all_behaviors"][var])
+			{
+				if (g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)tbl.get<string>("Name") } ) }))
+				{
+					DBLua::InvokeWithObjectIndex(tbl.get<string>("Name"), tbl["Step"]);
+				}
+			}
 		}
 	}
 };
-
-sol::table NewObjectBehavior(string objectName, sol::protected_function func)
-{
-	static sol::table allBehaviors = dl_lua["object_behaviors"];
-
-	if (allBehaviors)
-	{
-		sol::table behav = dl_lua.create_table();
-		behav["objectName"] = objectName;
-		behav["stepFunc"] = func;
-
-		allBehaviors.add(behav);
-
-		return behav;
-	}
-
-	return sol::nil;
-}
 
 RValue ObjectToRValue(sol::object obj)
 {
@@ -99,11 +104,11 @@ sol::state GetModState()
 
 	inState["object_behaviors"] = inState.create_table();
 
-	inState["object_behaviors"][0] = sol::nil;
+	inState["enemy_data"] = DBLua::EnemyData;
 
-	inState["new_object_behavior"] = NewObjectBehavior;
+	inState["projectile_data"] = DBLua::ProjectileData;
 
-	inState["all_enemies"] = inState.create_table();
+	inState["register_data"] = RegisterData;
 
 	inState["spawn_particle"] = DBLua::SpawnParticle;
 
@@ -178,8 +183,8 @@ EXPORTED AurieStatus ModuleInitialize(
 	yytk_interface->PrintInfo("Database Loader has initialized!");
 
 	dl_lua = GetModState();
-
-	allBehaviors = dl_lua["object_behaviors"];
+	
+	dl_lua["all_behaviors"] = dl_lua.create_table();
 
 	g_YYTKInterface->PrintInfo("[Database Loader] Built-in functions loaded!");
 
@@ -198,21 +203,14 @@ EXPORTED AurieStatus ModuleInitialize(
 		for (size_t i = 0; i < filesystem.size(); i++)
 		{
 			g_YYTKInterface->PrintInfo("[Database Loader] File '" + filesystem[i].filename().string() + "' loaded...");
-			modState.script_file(filesystem[i].string());
-		}
-
-		sol::table behavs = modState["object_behaviors"];
-
-		for (size_t i = 0; i < behavs.size(); i++)
-		{
-			allBehaviors.add(behavs[i]);
+			dl_lua.script_file(filesystem[i].string());
 		}
 	}
 
 	yytk_interface->CreateCallback(
 		Module,
-		YYTK::EVENT_FRAME,
-		ObjectBehaviorRun,
+		YYTK::EVENT_OBJECT_CALL,
+		GMHooks::EnemyData,
 		0);
 
 	CScript* script_data = nullptr;
@@ -267,6 +265,18 @@ EXPORTED AurieStatus ModuleInitialize(
 		"MusicDoLoopFromStart",
 		script_data->m_Functions->m_ScriptFunction,
 		GMHooks::MusicDoLoopFromStart,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_enemy_damage",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"EnemyDamage",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::EnemyDamage,
 		&original_function
 	);
 

@@ -3,6 +3,8 @@
 #include "YYToolkit/YYTK_Shared.hpp"
 #include "DBLua.h"
 #include "GMWrappers.h"
+#include "DatabaseLoader.h"
+#include "ModuleMain.h"
 #include "Files.h"
 #include <map>
 #include "sol/sol.hpp"
@@ -16,11 +18,23 @@ RValue ObjectToValue(sol::object obj)
 	switch (obj.get_type())
 	{
 	case sol::lua_type_of_v<double>:
-		return obj.as<double>();
+		return RValue(obj.as<double>());
 	case sol::lua_type_of_v<bool>:
-		return obj.as<bool>();
+		return RValue(obj.as<bool>());
 	case sol::lua_type_of_v<string>:
-		return obj.as<string_view>();
+		return RValue(obj.as<string_view>());
+	}
+}
+sol::lua_value ValueToObject(RValue obj)
+{
+	switch (obj.m_Kind)
+	{
+	case YYTK::VALUE_REAL:
+		return obj.ToDouble();
+	case YYTK::VALUE_BOOL:
+		return obj.ToBoolean();
+	case YYTK::VALUE_STRING:
+		return obj.ToString();
 	}
 }
 RValue DatabaseLoader::DBLua::CallBuiltinLua(
@@ -191,6 +205,9 @@ void DatabaseLoader::DBLua::SetVar(double inst, string varName, sol::object val)
 	case sol::lua_type_of_v<string>:
 		DatabaseLoader::DBLua::SetString(inst, varName, val.as<string>());
 		break;
+	case sol::lua_type_of_v<sol::table>:
+		DatabaseLoader::DBLua::SetArray(inst, varName, val.as<sol::table>());
+		break;
 	}
 }
 
@@ -239,6 +256,17 @@ void DatabaseLoader::DBLua::InitString(double inst, string varName, string val)
 	}
 }
 
+void DatabaseLoader::DBLua::InitArray(double inst, string varName, sol::table vals)
+{
+	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {
+		inst,
+		(string_view)varName
+		}).ToBoolean())
+	{
+		SetArray(inst, varName, vals);
+	}
+}
+
 void DatabaseLoader::DBLua::SetDouble(double inst, string varName, double val)
 {
 	g_YYTKInterface->CallBuiltin("variable_instance_set", {
@@ -263,6 +291,22 @@ void DatabaseLoader::DBLua::SetString(double inst, string varName, string val)
 	inst,
 	(string_view)varName,
 	(string_view)val
+		});
+}
+
+void DatabaseLoader::DBLua::SetArray(double inst, string varName, sol::table vals)
+{
+	RValue arr = g_YYTKInterface->CallBuiltin("array_create", { vals.size() });
+
+	for (size_t i = 1; i < vals.size() + 1; i++)
+	{
+		g_YYTKInterface->CallBuiltin("array_push", { arr, ObjectToValue(vals[i]) });
+	}
+
+	g_YYTKInterface->CallBuiltin("variable_instance_set", {
+	inst,
+	(string_view)varName,
+	arr
 		});
 }
 
@@ -336,13 +380,6 @@ Register a custom music piece from the provided file path, then add it to the ju
 */
 double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 {
-	RValue progdir;
-
-	CInstance** inst = nullptr;
-	g_YYTKInterface->GetGlobalInstance(inst);
-
-	g_YYTKInterface->GetBuiltin("program_directory", reinterpret_cast<CInstance*>(inst), 0, progdir);
-
 	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
 
 	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "dbl_CustomMusicList" }))
@@ -353,6 +390,8 @@ double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
+
+	//Files::CopyFileTo(Files::GetModsDirectory() + path, Files::GetSteamDirectory());
 
 	return snd.ToDouble();
 }
@@ -428,16 +467,18 @@ Calls a built-in GameMaker function. Returns void.
 @param args a table containing the arguments to pass in
 @return void
 */
-void DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
+sol::lua_value DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
 {
 	vector<RValue> vals = {};
 
-	for (size_t i = 0; i < args.size(); i++)
+	for (size_t i = 1; i < args.size() + 1; i++)
 	{
-		vals.push_back(args[i]);
+		vals.push_back(ObjectToValue(args[i]));
 	}
 
-	g_YYTKInterface->CallBuiltin(name.c_str(), vals).ToDouble();
+	RValue val = g_YYTKInterface->CallBuiltin(name.c_str(), vals);
+
+	return ValueToObject(val);
 }
 
 /***
@@ -523,8 +564,22 @@ void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, d
 	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
 }
 
-void DatabaseLoader::DBLua::CustomEnemy(string name)
+sol::table DatabaseLoader::DBLua::EnemyData(string name)
 {
+	sol::table data = dl_lua.create_table_with(
+		"DataType", "enemy",
+		"Name", name,
+		"Create", [](double) {},
+		"Step", [](double) {},
+		"Destroy", [](double) {},
+		"TakeDamage", [](double, double) {});
 
+	return data;
 }
 
+sol::table DatabaseLoader::DBLua::ProjectileData(string name)
+{
+	return dl_lua.create_table_with(
+		"DataType", "projectile",
+		"Name", name);
+}

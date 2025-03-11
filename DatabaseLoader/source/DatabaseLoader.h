@@ -91,6 +91,7 @@ namespace DatabaseLoader
 	inline YYTKInterface* g_YYTKInterface;
 
 	inline sol::state dl_lua;
+	inline sol::state modState;
 
 	class MusicType {
 	public:

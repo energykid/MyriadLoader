@@ -1,5 +1,6 @@
 #include "Aurie/shared.hpp"
 #include "ModuleMain.h"
+#include "DatabaseLoader.h"
 #include "GMWrappers.h"
 #include "GMHooks.h"
 #include "YYToolkit/YYTK_Shared.hpp"
@@ -61,7 +62,7 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CIn
 
 	RValue snd = *Arguments[0];
 	
-	if (g_YYTKInterface->CallBuiltin("array_contains", { GMWrappers::GetGlobal("dbl_CustomMusicList"), snd }).ToBoolean())
+	if (snd.ToDouble() > 267)
 	{
 		RValue Sound = g_YYTKInterface->CallBuiltin("audio_play_sound", { snd, 0, true });
 		GMWrappers::SetGlobal("current_music", Sound);
@@ -72,4 +73,205 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CIn
 	}
 
 	return Result;
+}
+
+RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	auto original_function = reinterpret_cast<decltype(&EnemyDamage)>(MmGetHookTrampoline(g_ArSelfModule, "EnemyDamage"));
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+	
+	RValue Instance = Self->ToRValue();
+	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+
+	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" }).ToDouble();
+	RValue CustomDataString = "";
+
+	RValue ObjectIndexString = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex });
+
+	bool is_custom = false;
+	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomData" }).ToBoolean())
+	{
+		is_custom = true;
+		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" });
+	}
+
+	double AttackDamage = 2;
+
+	if (is_custom)
+	{
+		if (dl_lua["all_behaviors"])
+		{
+			sol::table count = dl_lua["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				sol::table tbl = dl_lua["all_behaviors"][var];
+				if (dl_lua["all_behaviors"][var])
+				{
+					if (tbl.get<string>("Name") == CustomDataString.ToString() || tbl.get<string>("Name") == "all")
+					{
+						sol::protected_function_result result = dl_lua["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+						if (!result.valid())
+						{
+							sol::error error = result;
+
+							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		if (dl_lua["all_behaviors"])
+		{
+			sol::table count = dl_lua["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				sol::table tbl = dl_lua["all_behaviors"][var];
+				if (dl_lua["all_behaviors"][var])
+				{
+					if (tbl.get<string>("Name") == ObjectIndexString.ToString() || tbl.get<string>("Name") == "all")
+					{
+						sol::protected_function_result result = dl_lua["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+						if (!result.valid())
+						{
+							sol::error error = result;
+
+							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return Result;
+}
+
+void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
+{
+	CCode* Code = std::get<2>(FunctionContext.Arguments());
+
+	CInstance* Self = std::get<0>(FunctionContext.Arguments());
+	RValue Instance = Self->ToRValue();
+	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+
+	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
+
+	if (!g_YYTKInterface->CallBuiltin("object_is_ancestor", { objectIndex, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_enemy"}) }).ToBoolean())
+	{
+		return;
+	}
+
+	string CustomDataString = "";
+
+	bool is_custom = false;
+	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomData" }).ToBoolean())
+	{
+		is_custom = true;
+		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" }).ToString();
+	}
+
+	if (is_custom)
+	{
+		if (dl_lua["all_behaviors"])
+		{
+			sol::table count = dl_lua["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				sol::table tbl = dl_lua["all_behaviors"][var];
+				if (dl_lua["all_behaviors"][var])
+				{
+					if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
+					{
+						// Create script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
+						{
+							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Create"].call(InstanceID);
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+						}
+						// Step script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Step_1")
+						{
+							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Step"].call(InstanceID);
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+						}
+						// Destroy script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
+						{
+							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Destroy"].call(InstanceID);
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		if (dl_lua["all_behaviors"])
+		{
+			sol::table count = dl_lua["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				sol::table tbl = dl_lua["all_behaviors"][var];
+				if (dl_lua["all_behaviors"][var])
+				{
+					if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
+						|| tbl.get<string>("Name") == "all")
+					{
+						// Create script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
+						{
+							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Create"].call(InstanceID);
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+						}
+						// Step script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Step_1")
+						{
+							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Step"].call(InstanceID);
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+						}
+						// Destroy script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
+						{
+							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Destroy"].call(InstanceID);
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
