@@ -79,7 +79,7 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 {
 	auto original_function = reinterpret_cast<decltype(&EnemyDamage)>(MmGetHookTrampoline(g_ArSelfModule, "EnemyDamage"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
-	
+
 	RValue Instance = Self->ToRValue();
 	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
 
@@ -97,48 +97,51 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 
 	double AttackDamage = 2;
 
-	if (is_custom)
+	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
-		if (dl_lua["all_behaviors"])
+		if (is_custom)
 		{
-			sol::table count = dl_lua["all_behaviors"];
-			for (double var = 0; var < count.size() + 1; var++)
+			if (modState.at(stateNum)["all_behaviors"])
 			{
-				sol::table tbl = dl_lua["all_behaviors"][var];
-				if (dl_lua["all_behaviors"][var])
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
 				{
-					if (tbl.get<string>("Name") == CustomDataString.ToString() || tbl.get<string>("Name") == "all")
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
 					{
-						sol::protected_function_result result = dl_lua["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-						if (!result.valid())
+						if (tbl.get<string>("Name") == CustomDataString.ToString() || tbl.get<string>("Name") == "all")
 						{
-							sol::error error = result;
+							sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+							if (!result.valid())
+							{
+								sol::error error = result;
 
-							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
 						}
 					}
 				}
 			}
 		}
-	}
-	else
-	{
-		if (dl_lua["all_behaviors"])
+		else
 		{
-			sol::table count = dl_lua["all_behaviors"];
-			for (double var = 0; var < count.size() + 1; var++)
+			if (modState.at(stateNum)["all_behaviors"])
 			{
-				sol::table tbl = dl_lua["all_behaviors"][var];
-				if (dl_lua["all_behaviors"][var])
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
 				{
-					if (tbl.get<string>("Name") == ObjectIndexString.ToString() || tbl.get<string>("Name") == "all")
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
 					{
-						sol::protected_function_result result = dl_lua["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-						if (!result.valid())
+						if (tbl.get<string>("Name") == ObjectIndexString.ToString() || tbl.get<string>("Name") == "all")
 						{
-							sol::error error = result;
+							sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+							if (!result.valid())
+							{
+								sol::error error = result;
 
-							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
 						}
 					}
 				}
@@ -173,100 +176,81 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" }).ToString();
 	}
 
-	if (is_custom)
+	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
-		if (dl_lua["all_behaviors"])
+		if (is_custom)
 		{
-			sol::table count = dl_lua["all_behaviors"];
-			for (double var = 0; var < count.size() + 1; var++)
+			if (dl_lua["all_behaviors"])
 			{
-				sol::table tbl = dl_lua["all_behaviors"][var];
-				if (dl_lua["all_behaviors"][var])
+				sol::table count = dl_lua["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
 				{
-					if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
+					sol::table tbl = dl_lua["all_behaviors"][var];
+					if (dl_lua["all_behaviors"][var])
 					{
-						// Create script
-						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
+						if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
 						{
-							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Create"].call(InstanceID);
-							if (!result.valid())
+							// Create script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 							{
-								sol::error error = result;
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+								if (!result.valid())
+								{
+									sol::error error = result;
 
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
 							}
-						}
-						// Step script
-						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Step_1")
-						{
-							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Step"].call(InstanceID);
-							if (!result.valid())
+							// Destroy script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
 							{
-								sol::error error = result;
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
+								if (!result.valid())
+								{
+									sol::error error = result;
 
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-							}
-						}
-						// Destroy script
-						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-						{
-							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Destroy"].call(InstanceID);
-							if (!result.valid())
-							{
-								sol::error error = result;
-
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
 							}
 						}
 					}
 				}
 			}
 		}
-	}
-	else
-	{
-		if (dl_lua["all_behaviors"])
+		else
 		{
-			sol::table count = dl_lua["all_behaviors"];
-			for (double var = 0; var < count.size() + 1; var++)
+			if (dl_lua["all_behaviors"])
 			{
-				sol::table tbl = dl_lua["all_behaviors"][var];
-				if (dl_lua["all_behaviors"][var])
+				sol::table count = dl_lua["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
 				{
-					if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-						|| tbl.get<string>("Name") == "all")
+					sol::table tbl = dl_lua["all_behaviors"][var];
+					if (dl_lua["all_behaviors"][var])
 					{
-						// Create script
-						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
+						if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
+							|| tbl.get<string>("Name") == "all")
 						{
-							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Create"].call(InstanceID);
-							if (!result.valid())
+							// Create script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 							{
-								sol::error error = result;
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+								if (!result.valid())
+								{
+									sol::error error = result;
 
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
 							}
-						}
-						// Step script
-						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Step_1")
-						{
-							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Step"].call(InstanceID);
-							if (!result.valid())
+							// Destroy script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
 							{
-								sol::error error = result;
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
+								if (!result.valid())
+								{
+									sol::error error = result;
 
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-							}
-						}
-						// Destroy script
-						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-						{
-							sol::protected_function_result result = dl_lua["all_behaviors"][var]["Destroy"].call(InstanceID);
-							if (!result.valid())
-							{
-								sol::error error = result;
-
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
 							}
 						}
 					}

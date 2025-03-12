@@ -17,10 +17,10 @@ namespace DatabaseLoader
 		static void SetString(double inst, string varName, string val);
 		static void SetArray(double inst, string varName, sol::table vals);
 	public:
-
 		static void InvokeWithObjectIndex(string Object, sol::protected_function func);
 		static void InitVar(double inst, string varName, sol::object val);
 		static void SetVar(double inst, string varName, sol::object val);
+		static sol::lua_value GetVar(double inst, string varName);
 		static double GetDouble(double inst, string varName);
 		static bool GetBool(double inst, string varName);
 		static string GetString(double inst, string varName);

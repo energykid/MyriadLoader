@@ -8,6 +8,8 @@
 #include "Files.h"
 #include <map>
 #include "sol/sol.hpp"
+#include <iostream>
+#include <string>
 
 using namespace DatabaseLoader;
 
@@ -30,11 +32,11 @@ sol::lua_value ValueToObject(RValue obj)
 	switch (obj.m_Kind)
 	{
 	case YYTK::VALUE_REAL:
-		return obj.ToDouble();
+		return sol::lua_value(modState[currentState], obj.ToDouble());
 	case YYTK::VALUE_BOOL:
-		return obj.ToBoolean();
+		return sol::lua_value(modState[currentState], obj.ToBoolean());
 	case YYTK::VALUE_STRING:
-		return obj.ToString();
+		return sol::lua_value(modState[currentState], obj.ToString());
 	}
 }
 RValue DatabaseLoader::DBLua::CallBuiltinLua(
@@ -209,6 +211,15 @@ void DatabaseLoader::DBLua::SetVar(double inst, string varName, sol::object val)
 		DatabaseLoader::DBLua::SetArray(inst, varName, val.as<sol::table>());
 		break;
 	}
+}
+
+sol::lua_value DatabaseLoader::DBLua::GetVar(double inst, string varName)
+{
+	RValue val = g_YYTKInterface->CallBuiltin("variable_instance_get", {
+		inst,
+		(string_view)varName });
+
+	return ValueToObject(val);
 }
 
 void DatabaseLoader::DBLua::InitDouble(double inst, string varName, double val)
@@ -566,7 +577,7 @@ void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, d
 
 sol::table DatabaseLoader::DBLua::EnemyData(string name)
 {
-	sol::table data = dl_lua.create_table_with(
+	sol::table data = modState[currentState].create_table_with(
 		"DataType", "enemy",
 		"Name", name,
 		"Create", [](double) {},
@@ -579,7 +590,10 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 
 sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 {
-	return dl_lua.create_table_with(
+	return modState[currentState].create_table_with(
 		"DataType", "projectile",
-		"Name", name);
+		"Name", name,
+		"Create", [](double) {},
+		"Step", [](double) {},
+		"Destroy", [](double) {});
 }

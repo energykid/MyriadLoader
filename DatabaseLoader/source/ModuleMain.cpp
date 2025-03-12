@@ -11,6 +11,7 @@
 #include "GMHooks.h"
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 
 #pragma comment(lib, "lua54.lib")
 
@@ -45,33 +46,70 @@ string GetUserDirectory() {
 
 static void RegisterData(sol::table data)
 {
-	sol::table tbl = dl_lua["all_behaviors"];
+	sol::table tbl = modState[currentState]["all_behaviors"];
 
-	g_YYTKInterface->PrintWarning(data.get<string>("Name"));
+	modState[currentState]["all_behaviors"][tbl.size() + 1] = data;
+}
 
-	dl_lua["all_behaviors"][tbl.size() + 1] = data;
+void UnloadMods()
+{
+	string dir = Files::GetModsDirectory();
+
+	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
+
+	for (size_t i = 0; i < mods.size(); i++)
+	{
+		currentState = i;
+
+		modState[currentState]["dbl_unload"].call();
+
+		g_YYTKInterface->Print(CM_LIGHTBLUE, "[DatabaseLoader] Unloaded mod " + mods[i].filename().string());
+	}
+
+	modState.clear();
 }
 
 void ObjectBehaviorRun(FWFrame& context)
 {
 	UNREFERENCED_PARAMETER(context);
 
-	if (dl_lua["all_behaviors"])
+	if (g_YYTKInterface->CallBuiltin("keyboard_check_pressed", { g_YYTKInterface->CallBuiltin("ord", {"P"}) }))
 	{
-		sol::table count = dl_lua["all_behaviors"];
-		for (double var = 0; var < count.size() + 1; var++)
+		UnloadMods();
+	}
+	
+	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
+	{
+		if (modState.at(stateNum)["all_behaviors"])
 		{
-			sol::table tbl = dl_lua["all_behaviors"][var];
-			if (dl_lua["all_behaviors"][var])
+			sol::table count = modState.at(stateNum)["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
 			{
-				if (g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)tbl.get<string>("Name") } ) }))
+				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+				if (modState.at(stateNum)["all_behaviors"][var])
 				{
-					DBLua::InvokeWithObjectIndex(tbl.get<string>("Name"), tbl["Step"]);
+					if (g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)tbl.get<string>("Name") }) }))
+					{
+						DBLua::InvokeWithObjectIndex(tbl.get<string>("Name"), tbl["Step"]);
+					}
+
+					if (tbl.get<string>("Name") == "all")
+					{
+						if (tbl.get<string>("DataType") == "enemy")
+						{
+							DBLua::InvokeWithObjectIndex("obj_enemy", tbl["Step"]);
+						}
+						if (tbl.get<string>("DataType") == "projectile")
+						{
+							DBLua::InvokeWithObjectIndex("obj_bullet_type", tbl["Step"]);
+						}
+					}
 				}
 			}
 		}
 	}
 };
+
 
 RValue ObjectToRValue(sol::object obj)
 {
@@ -96,7 +134,7 @@ sol::state GetModState()
 {
 	sol::state inState;
 
-	inState.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);\
+	inState.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::string);
 
 	inState["debug_out"] = [](string text) {
 		yytk_interface->PrintInfo(text);
@@ -116,6 +154,8 @@ sol::state GetModState()
 
 	inState["set_var"] = DBLua::SetVar;
 
+	inState["get_var"] = DBLua::GetVar;
+
 	inState["init_number"] = DBLua::InitVar;
 
 	inState["init_bool"] = DBLua::InitVar;
@@ -128,11 +168,11 @@ sol::state GetModState()
 
 	inState["set_string"] = DBLua::SetVar;
 
-	inState["get_number"] = DBLua::GetDouble;
+	inState["get_number"] = DBLua::GetVar;
 
-	inState["get_bool"] = DBLua::GetBool;
+	inState["get_bool"] = DBLua::GetVar;
 
-	inState["get_string"] = DBLua::GetString;
+	inState["get_string"] = DBLua::GetVar;
 
 	inState["custom_sprite"] = DBLua::GetCustomSprite;
 
@@ -159,6 +199,36 @@ sol::state GetModState()
 	return inState;
 }
 
+std::string GetFileContents(const std::string& filePath) {
+	std::ifstream file(filePath);
+	if (!file.is_open()) {
+		return ""; // Returns an empty string if the file fails to open
+	}
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return buffer.str();
+}
+
+
+int LoadFileRequire(lua_State* L)
+{
+	std::string path = sol::stack::get<std::string>(L);
+
+	std::string script = GetFileContents(Files::GetModsDirectory() + "/" + path + ".lua");
+
+	if (script != "")
+	{
+		luaL_loadbuffer(L, script.data(), script.size(), path.c_str());
+		g_YYTKInterface->Print(CM_LIGHTGREEN, "[DatabaseLoader] Loaded module " + path);
+	}
+	else
+	{
+		g_YYTKInterface->Print(CM_LIGHTRED, "[DatabaseLoader] Could not load module: " + path);
+	}
+
+	return 1;
+}
+
 EXPORTED AurieStatus ModuleInitialize(
 	IN AurieModule* Module,
 	IN const fs::path& ModulePath
@@ -180,13 +250,9 @@ EXPORTED AurieStatus ModuleInitialize(
 	if (!AurieSuccess(last_status))
 		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
 
-	yytk_interface->PrintInfo("Database Loader has initialized!");
-
 	dl_lua = GetModState();
 	
 	dl_lua["all_behaviors"] = dl_lua.create_table();
-
-	g_YYTKInterface->PrintInfo("[Database Loader] Built-in functions loaded!");
 
 	string dir = Files::GetModsDirectory();
 
@@ -196,21 +262,31 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	for (size_t i = 0; i < mods.size(); i++)
 	{
-		vector<filesystem::path> filesystem = Files::GetFilesOfType(mods[i].string(), ".lua");
+		modState.push_back(GetModState());
+		modState[currentState].clear_package_loaders();
+		modState[currentState].add_package_loader(LoadFileRequire);
 
-		modState = GetModState();
+		currentState = i;
 
-		for (size_t i = 0; i < filesystem.size(); i++)
-		{
-			g_YYTKInterface->PrintInfo("[Database Loader] File '" + filesystem[i].filename().string() + "' loaded...");
-			dl_lua.script_file(filesystem[i].string());
-		}
+		modState[currentState]["all_behaviors"] = modState[currentState].create_table();
+
+		modState[currentState].script_file(mods[i].string() + "/main.lua");
+
+		modState[currentState]["dbl_load"].call();
+
+		g_YYTKInterface->Print(CM_LIGHTBLUE, "[DatabaseLoader] Loaded mod " + mods[i].filename().string());
 	}
 
 	yytk_interface->CreateCallback(
 		Module,
 		YYTK::EVENT_OBJECT_CALL,
 		GMHooks::EnemyData,
+		0);
+
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_FRAME,
+		ObjectBehaviorRun,
 		0);
 
 	CScript* script_data = nullptr;
@@ -279,6 +355,19 @@ EXPORTED AurieStatus ModuleInitialize(
 		GMHooks::EnemyDamage,
 		&original_function
 	);
+
+	return AURIE_SUCCESS;
+}
+
+EXPORTED AurieStatus ModuleUnload(
+	IN AurieModule* Module,
+	IN const fs::path& ModulePath
+)
+{
+	UNREFERENCED_PARAMETER(Module);
+	UNREFERENCED_PARAMETER(ModulePath);
+
+	UnloadMods();
 
 	return AURIE_SUCCESS;
 }
