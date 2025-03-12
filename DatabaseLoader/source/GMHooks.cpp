@@ -160,18 +160,27 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 {
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
 
+	CInstance* GlobalInstance;
+
+	RValue view;
+	g_YYTKInterface->GetGlobalInstance(&GlobalInstance);
+
+	g_YYTKInterface->GetBuiltin("view_current", GlobalInstance, 0, view);
+
+	RValue viewCamera = g_YYTKInterface->CallBuiltin("view_get_camera", { view });
+
 	CInstance* Self = std::get<0>(FunctionContext.Arguments());
 	RValue Instance = Self->ToRValue();
 	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
 
 	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
 
-	if (!g_YYTKInterface->CallBuiltin("object_is_ancestor", { objectIndex, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_enemy"}) }).ToBoolean())
-	{
-		return;
-	}
-
 	string CustomDataString = "";
+
+	modState.at(currentState)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
+	modState.at(currentState)["screen_center_x"] = modState.at(currentState).get<double>("view_x") + (290 / 2);
+	modState.at(currentState)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
+	modState.at(currentState)["screen_center_y"] = modState.at(currentState).get<double>("view_x") + (464 / 2);
 
 	bool is_custom = false;
 	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomData" }).ToBoolean())
@@ -290,9 +299,20 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 						if (tbl.get<string>("DataType") == "global")
 						{
 							// Draw script
-							if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
+							if ((string)Code->GetName() == (string)"gml_Object_obj_draw_manager_lower_Draw_0")
 							{
 								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
+								if (!result.valid())
+								{
+									sol::error error = result;
+
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
+							}
+							// DrawInGame script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
+							{
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["DrawInGame"].call();
 								if (!result.valid())
 								{
 									sol::error error = result;

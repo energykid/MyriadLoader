@@ -20,7 +20,10 @@ namespace DatabaseLoader
 		static void InvokeWithObjectIndex(string Object, sol::protected_function func);
 		static void InitVar(double inst, string varName, sol::object val);
 		static void SetVar(double inst, string varName, sol::object val);
+		static void InitGlobal(string varName, sol::object val);
+		static void SetGlobal(string varName, sol::object val);
 		static sol::lua_value GetVar(double inst, string varName);
+		static sol::lua_value GetGlobal(string varName);
 		static double GetDouble(double inst, string varName);
 		static bool GetBool(double inst, string varName);
 		static string GetString(double inst, string varName);
@@ -40,13 +43,14 @@ namespace DatabaseLoader
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
 
 		static void DrawSetDepth(double dep);
+		static void DrawSetColor(double col);
+
+		static double CreateColor(double r, double g, double b);
 
 		static void DrawSprite(double x, double y, double spriteID, double frameNumber);
 		static void DrawString(double x, double y, string text);
 		static void DrawStringColor(double x, double y, string text, double color);
 		static void DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha);
-
-		static double CustomColor(double r, double g, double b);
 
 		static sol::table EnemyData(string name);
 		static sol::table ProjectileData(string name);

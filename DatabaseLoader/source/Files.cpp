@@ -53,7 +53,7 @@ bool DatabaseLoader::Files::MakeDirectory(string dir_name)
 {
     if (std::filesystem::create_directories(dir_name))
     {
-        g_YYTKInterface->PrintInfo("[DatabaseLoader] Directory created: " + dir_name);
+        g_YYTKInterface->PrintInfo("[Myriad Loader] Directory created: " + dir_name);
     }
 }
 

@@ -185,7 +185,6 @@ void DatabaseLoader::DBLua::InitVar(double inst, string varName, sol::object val
 	}
 }
 
-
 /***
 Set a number, boolean, or string, local to the instance ID provided. Will work with GameMaker built-in variables too.
 @function set_var
@@ -213,6 +212,21 @@ void DatabaseLoader::DBLua::SetVar(double inst, string varName, sol::object val)
 	}
 }
 
+void DatabaseLoader::DBLua::InitGlobal(string varName, sol::object val)
+{
+	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", {
+		(string_view)varName
+		}).ToBoolean())
+	{
+		GMWrappers::SetGlobal(varName, ObjectToValue(val));
+	}
+}
+
+void DatabaseLoader::DBLua::SetGlobal(string varName, sol::object val)
+{
+	GMWrappers::SetGlobal(varName, ObjectToValue(val));
+}
+
 sol::lua_value DatabaseLoader::DBLua::GetVar(double inst, string varName)
 {
 	RValue val = g_YYTKInterface->CallBuiltin("variable_instance_get", {
@@ -220,6 +234,11 @@ sol::lua_value DatabaseLoader::DBLua::GetVar(double inst, string varName)
 		(string_view)varName });
 
 	return ValueToObject(val);
+}
+
+sol::lua_value DatabaseLoader::DBLua::GetGlobal(string varName)
+{
+	return ValueToObject(GMWrappers::GetGlobal(varName));
 }
 
 void DatabaseLoader::DBLua::InitDouble(double inst, string varName, double val)
@@ -565,9 +584,25 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 	return part.ToDouble();
 }
 
+/***
+Sets the depth for draw functions.
+@function draw_set_depth
+@param dep the depth to set
+@return void
+*/
 void DatabaseLoader::DBLua::DrawSetDepth(double dep)
 {
 	g_YYTKInterface->CallBuiltin("gpu_set_depth", { dep });
+}
+
+void DatabaseLoader::DBLua::DrawSetColor(double col)
+{
+	g_YYTKInterface->CallBuiltin("draw_set_color", { col });
+}
+
+double DatabaseLoader::DBLua::CreateColor(double r, double g, double b)
+{
+	return r + (g * 16 * 16) + (b * 16 * 16 * 16 * 16);
 }
 
 void DatabaseLoader::DBLua::DrawSprite(double x, double y, double spriteID, double frameNumber)
@@ -610,14 +645,9 @@ void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, d
 	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
 }
 
-double DatabaseLoader::DBLua::CustomColor(double r, double g, double b)
-{
-	return g_YYTKInterface->CallBuiltin("make_color_rgb", { r, g, b}).ToDouble();
-}
-
 sol::table DatabaseLoader::DBLua::EnemyData(string name)
 {
-	sol::table data = modState[currentState].create_table_with(
+	return modState[currentState].create_table_with(
 		"DataType", "enemy",
 		"Name", name,
 		"Create", [](double) {},
@@ -625,8 +655,6 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 		"Destroy", [](double) {},
 		"Draw", [](double) {},
 		"TakeDamage", [](double, double) {});
-
-	return data;
 }
 
 sol::table DatabaseLoader::DBLua::ProjectileData(string name)
@@ -646,5 +674,5 @@ sol::table DatabaseLoader::DBLua::GlobalData()
 		"DataType", "global",
 		"Step", []() {},
 		"Draw", []() {},
-		"EndDraw", []() {});
+		"DrawInGame", []() {});
 }

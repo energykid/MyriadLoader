@@ -63,7 +63,7 @@ void UnloadMods()
 
 		modState[currentState]["dbl_unload"].call();
 
-		g_YYTKInterface->Print(CM_LIGHTBLUE, "[DatabaseLoader] Unloaded mod " + mods[i].filename().string());
+		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
 	}
 
 	modState.clear();
@@ -85,7 +85,9 @@ void ObjectBehaviorRun(FWFrame& context)
 	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
 		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
+		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
 		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
+		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + (464 / 2);
 
 		if (modState.at(stateNum)["all_behaviors"])
 		{
@@ -157,6 +159,8 @@ sol::state GetModState()
 
 	inState["view_x"] = 0;
 	inState["view_y"] = 0;
+	inState["screen_center_x"] = 0;
+	inState["screen_center_y"] = 0;
 
 	inState["projectile_data"] = DBLua::ProjectileData;
 
@@ -171,6 +175,12 @@ sol::state GetModState()
 	inState["set_var"] = DBLua::SetVar;
 
 	inState["get_var"] = DBLua::GetVar;
+
+	inState["init_global"] = DBLua::InitGlobal;
+
+	inState["set_global"] = DBLua::SetGlobal;
+
+	inState["get_global"] = DBLua::GetGlobal;
 
 	inState["init_number"] = DBLua::InitVar;
 
@@ -214,9 +224,13 @@ sol::state GetModState()
 
 	inState["draw_text"] = DBLua::DrawString;
 
-	inState["color_rgb"] = DBLua::CustomColor;
-
 	inState["draw_set_depth"] = DBLua::DrawSetDepth;
+
+	inState["create_color"] = DBLua::CreateColor;
+	inState["create_colour"] = DBLua::CreateColor;
+
+	inState["draw_set_color"] = DBLua::DrawSetColor;
+	inState["draw_set_colour"] = DBLua::DrawSetColor;
 
 	return inState;
 }
@@ -239,12 +253,12 @@ int LoadFileRequire(lua_State* L)
 
 	if (script != "")
 	{
-		g_YYTKInterface->Print(CM_LIGHTGREEN, "[DatabaseLoader] Loaded module " + path);
+		g_YYTKInterface->Print(CM_LIGHTGREEN, "[Myriad Loader] Loaded module " + path);
 		luaL_loadbuffer(L, script.data(), script.size(), path.c_str());
 	}
 	else
 	{
-		g_YYTKInterface->Print(CM_LIGHTRED, "[DatabaseLoader] Could not load module: " + path);
+		g_YYTKInterface->Print(CM_LIGHTRED, "[Myriad Loader] Could not load module: " + path);
 	}
 
 	return 1;
@@ -284,10 +298,11 @@ EXPORTED AurieStatus ModuleInitialize(
 	for (size_t i = 0; i < mods.size(); i++)
 	{
 		modState.push_back(GetModState());
-		modState[currentState].clear_package_loaders();
-		modState[currentState].add_package_loader(LoadFileRequire);
 
 		currentState = i;
+
+		modState[currentState].clear_package_loaders();
+		modState[currentState].add_package_loader(LoadFileRequire);
 
 		modState[currentState]["all_behaviors"] = modState[currentState].create_table();
 
@@ -295,7 +310,7 @@ EXPORTED AurieStatus ModuleInitialize(
 
 		modState[currentState]["dbl_load"].call();
 
-		g_YYTKInterface->Print(CM_LIGHTBLUE, "[DatabaseLoader] Loaded mod " + mods[i].filename().string());
+		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
 	}
 
 	yytk_interface->CreateCallback(
