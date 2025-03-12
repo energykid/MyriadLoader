@@ -73,13 +73,20 @@ void ObjectBehaviorRun(FWFrame& context)
 {
 	UNREFERENCED_PARAMETER(context);
 
-	if (g_YYTKInterface->CallBuiltin("keyboard_check_pressed", { g_YYTKInterface->CallBuiltin("ord", {"P"}) }))
-	{
-		UnloadMods();
-	}
+	CInstance* GlobalInstance;
+
+	RValue view;
+	g_YYTKInterface->GetGlobalInstance(&GlobalInstance);
+
+	g_YYTKInterface->GetBuiltin("view_current", GlobalInstance, 0, view);
+
+	RValue viewCamera = g_YYTKInterface->CallBuiltin("view_get_camera", { view });
 	
 	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
+		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
+		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
+
 		if (modState.at(stateNum)["all_behaviors"])
 		{
 			sol::table count = modState.at(stateNum)["all_behaviors"];
@@ -90,7 +97,10 @@ void ObjectBehaviorRun(FWFrame& context)
 				{
 					if (g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)tbl.get<string>("Name") }) }))
 					{
-						DBLua::InvokeWithObjectIndex(tbl.get<string>("Name"), tbl["Step"]);
+						if (tbl.get<string>("DataType") == "enemy" || tbl.get<string>("DataType") == "projectile")
+						{
+							DBLua::InvokeWithObjectIndex(tbl.get<string>("Name"), tbl["Step"]);
+						}
 					}
 
 					if (tbl.get<string>("Name") == "all")
@@ -99,10 +109,11 @@ void ObjectBehaviorRun(FWFrame& context)
 						{
 							DBLua::InvokeWithObjectIndex("obj_enemy", tbl["Step"]);
 						}
-						if (tbl.get<string>("DataType") == "projectile")
-						{
-							DBLua::InvokeWithObjectIndex("obj_bullet_type", tbl["Step"]);
-						}
+					}
+
+					if (tbl.get<string>("DataType") == "global")
+					{
+						tbl["Step"].call();
 					}
 				}
 			}
@@ -144,7 +155,12 @@ sol::state GetModState()
 
 	inState["enemy_data"] = DBLua::EnemyData;
 
+	inState["view_x"] = 0;
+	inState["view_y"] = 0;
+
 	inState["projectile_data"] = DBLua::ProjectileData;
+
+	inState["global_data"] = DBLua::GlobalData;
 
 	inState["register_data"] = RegisterData;
 
@@ -184,7 +200,7 @@ sol::state GetModState()
 
 	inState["get_asset"] = DBLua::GetAsset;
 
-	inState["call_gm_function"] = DBLua::CallFunction;
+	inState["call_function"] = DBLua::CallFunction;
 
 	inState["call_game_function"] = DBLua::CallGameFunction;
 
@@ -195,6 +211,12 @@ sol::state GetModState()
 	inState["draw_sprite"] = DBLua::DrawSprite;
 
 	inState["draw_sprite_ext"] = DBLua::DrawSpriteExt;
+
+	inState["draw_text"] = DBLua::DrawString;
+
+	inState["color_rgb"] = DBLua::CustomColor;
+
+	inState["draw_set_depth"] = DBLua::DrawSetDepth;
 
 	return inState;
 }
@@ -209,7 +231,6 @@ std::string GetFileContents(const std::string& filePath) {
 	return buffer.str();
 }
 
-
 int LoadFileRequire(lua_State* L)
 {
 	std::string path = sol::stack::get<std::string>(L);
@@ -218,8 +239,8 @@ int LoadFileRequire(lua_State* L)
 
 	if (script != "")
 	{
-		luaL_loadbuffer(L, script.data(), script.size(), path.c_str());
 		g_YYTKInterface->Print(CM_LIGHTGREEN, "[DatabaseLoader] Loaded module " + path);
+		luaL_loadbuffer(L, script.data(), script.size(), path.c_str());
 	}
 	else
 	{

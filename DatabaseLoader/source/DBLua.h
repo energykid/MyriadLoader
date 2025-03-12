@@ -39,11 +39,18 @@ namespace DatabaseLoader
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
 
+		static void DrawSetDepth(double dep);
+
 		static void DrawSprite(double x, double y, double spriteID, double frameNumber);
+		static void DrawString(double x, double y, string text);
+		static void DrawStringColor(double x, double y, string text, double color);
 		static void DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha);
+
+		static double CustomColor(double r, double g, double b);
 
 		static sol::table EnemyData(string name);
 		static sol::table ProjectileData(string name);
+		static sol::table GlobalData();
 
 		static RValue CallBuiltinLua(
 			IN const char* FunctionName,

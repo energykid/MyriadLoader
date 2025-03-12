@@ -12,7 +12,10 @@ using namespace std::filesystem;
 
 string DatabaseLoader::Files::GetSteamDirectory()
 {
-    return "C:/Program Files (x86)/Steam/steamapps/common/Star of Providence/";
+    if (std::filesystem::exists("C:/Program Files (x86)/Steam/steamapps/common/Star of Providence/"))
+        return "C:/Program Files (x86)/Steam/steamapps/common/Star of Providence/";
+    else
+        return "C:/Program Files (x86)/Steam/steamapps/common/Monolith/";
 }
 
 string DatabaseLoader::Files::GetModsDirectory()

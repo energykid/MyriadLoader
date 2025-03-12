@@ -565,14 +565,54 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 	return part.ToDouble();
 }
 
+void DatabaseLoader::DBLua::DrawSetDepth(double dep)
+{
+	g_YYTKInterface->CallBuiltin("gpu_set_depth", { dep });
+}
+
 void DatabaseLoader::DBLua::DrawSprite(double x, double y, double spriteID, double frameNumber)
 {
 	g_YYTKInterface->CallBuiltin("draw_sprite", { spriteID, frameNumber, x, y });
 }
 
+void DatabaseLoader::DBLua::DrawString(double x, double y, string text)
+{
+	vector<RValue> vals;
+
+	vals.push_back(x);
+	vals.push_back(y);
+	vals.push_back((string_view)(text + " "));
+
+	g_YYTKInterface->CallBuiltin("draw_set_halign", { 0 });
+	g_YYTKInterface->CallBuiltin("draw_set_valign", { 0 });
+
+	g_YYTKInterface->CallBuiltin("draw_text", vals);
+}
+
+void DatabaseLoader::DBLua::DrawStringColor(double x, double y, string text, double color)
+{
+	vector<RValue> vals;
+
+	vals.push_back(x);
+	vals.push_back(y);
+	vals.push_back((string_view)(text + " "));
+
+	g_YYTKInterface->CallBuiltin("draw_set_halign", { 0 });
+	g_YYTKInterface->CallBuiltin("draw_set_valign", { 0 });
+
+	g_YYTKInterface->CallBuiltin("draw_set_color", { color });
+
+	g_YYTKInterface->CallBuiltin("draw_text", vals);
+}
+
 void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha)
 {
 	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
+}
+
+double DatabaseLoader::DBLua::CustomColor(double r, double g, double b)
+{
+	return g_YYTKInterface->CallBuiltin("make_color_rgb", { r, g, b}).ToDouble();
 }
 
 sol::table DatabaseLoader::DBLua::EnemyData(string name)
@@ -583,6 +623,7 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 		"Create", [](double) {},
 		"Step", [](double) {},
 		"Destroy", [](double) {},
+		"Draw", [](double) {},
 		"TakeDamage", [](double, double) {});
 
 	return data;
@@ -595,5 +636,15 @@ sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 		"Name", name,
 		"Create", [](double) {},
 		"Step", [](double) {},
-		"Destroy", [](double) {});
+		"Destroy", [](double) {},
+		"Draw", [](double) {});
+}
+
+sol::table DatabaseLoader::DBLua::GlobalData()
+{
+	return modState[currentState].create_table_with(
+		"DataType", "global",
+		"Step", []() {},
+		"Draw", []() {},
+		"EndDraw", []() {});
 }
