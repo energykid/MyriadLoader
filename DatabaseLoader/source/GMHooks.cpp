@@ -177,10 +177,13 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 
 	string CustomDataString = "";
 
-	modState.at(currentState)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
-	modState.at(currentState)["screen_center_x"] = modState.at(currentState).get<double>("view_x") + (290 / 2);
-	modState.at(currentState)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
-	modState.at(currentState)["screen_center_y"] = modState.at(currentState).get<double>("view_x") + (464 / 2);
+	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
+	{
+		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
+		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
+		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
+		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + (464 / 2);
+	}
 
 	bool is_custom = false;
 	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomData" }).ToBoolean())
