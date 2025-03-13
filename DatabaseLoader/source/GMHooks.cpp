@@ -93,7 +93,7 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" });
 	}
 
-	double AttackDamage = 2;
+	double AttackDamage = (Arguments[0])->ToDouble();
 
 	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
@@ -152,7 +152,6 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 			}
 		}
 	}
-
 	return Result;
 }
 
@@ -302,9 +301,9 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 						if (tbl.get<string>("DataType") == "global")
 						{
 							// Draw script
-							if ((string)Code->GetName() == (string)"gml_Object_obj_draw_manager_lower_Draw_0")
+							if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
 								if (!result.valid())
 								{
 									sol::error error = result;
@@ -315,7 +314,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 							// DrawInGame script
 							if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["DrawInGame"].call();
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
 								if (!result.valid())
 								{
 									sol::error error = result;

@@ -11,6 +11,7 @@
 #include "GMHooks.h"
 #include <filesystem>
 #include <iostream>
+#include "SaverLoader.h"
 #include <fstream>
 
 #pragma comment(lib, "lua54.lib")
@@ -149,6 +150,8 @@ sol::state GetModState()
 
 	inState.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::string);
 
+	inState["modName"] = "";
+
 	inState["debug_out"] = [](string text) {
 		yytk_interface->PrintInfo(text);
 		};
@@ -224,7 +227,13 @@ sol::state GetModState()
 
 	inState["draw_text"] = DBLua::DrawString;
 
+	inState["draw_rectangle"] = DBLua::DrawRect;
+
 	inState["draw_set_depth"] = DBLua::DrawSetDepth;
+
+	inState["save_data"] = SaverLoader::SaveVariable;
+
+	inState["load_data"] = SaverLoader::LoadVariable;
 
 	inState["create_color"] = DBLua::CreateColor;
 	inState["create_colour"] = DBLua::CreateColor;
@@ -235,21 +244,11 @@ sol::state GetModState()
 	return inState;
 }
 
-std::string GetFileContents(const std::string& filePath) {
-	std::ifstream file(filePath);
-	if (!file.is_open()) {
-		return ""; // Returns an empty string if the file fails to open
-	}
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	return buffer.str();
-}
-
 int LoadFileRequire(lua_State* L)
 {
 	std::string path = sol::stack::get<std::string>(L);
 
-	std::string script = GetFileContents(Files::GetModsDirectory() + "/" + path + ".lua");
+	std::string script = Files::GetFileContents(Files::GetModsDirectory() + "/" + path + ".lua");
 
 	if (script != "")
 	{
@@ -290,8 +289,10 @@ EXPORTED AurieStatus ModuleInitialize(
 	dl_lua["all_behaviors"] = dl_lua.create_table();
 
 	string dir = Files::GetModsDirectory();
+	string savedir = Files::GetModSavesDirectory();
 
 	Files::MakeDirectory(dir);
+	Files::MakeDirectory(savedir);
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
 

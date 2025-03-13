@@ -434,7 +434,7 @@ Unlock the provided music piece at the jukebox.
 */
 void DatabaseLoader::DBLua::UnlockSong(double songName)
 {
-	string name = g_YYTKInterface->CallBuiltin("audio_get_name", {songName}).ToString();
+	string name = g_YYTKInterface->CallBuiltin("audio_get_name", { songName }).ToString();
 
 	GMWrappers::CallGameScript("gml_Script_music_unlock", { (string_view)name });
 }
@@ -509,6 +509,11 @@ sol::lua_value DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
 	RValue val = g_YYTKInterface->CallBuiltin(name.c_str(), vals);
 
 	return ValueToObject(val);
+}
+
+void DatabaseLoader::DBLua::DrawRect(double x1, double y1, double x2, double y2, bool outline)
+{
+	RValue val = g_YYTKInterface->CallBuiltin("draw_rectangle", {x1, y1, x2, y2, outline});
 }
 
 /***
@@ -674,5 +679,5 @@ sol::table DatabaseLoader::DBLua::GlobalData()
 		"DataType", "global",
 		"Step", []() {},
 		"Draw", []() {},
-		"DrawInGame", []() {});
+		"DrawUI", []() {});
 }

@@ -47,6 +47,7 @@ namespace DatabaseLoader
 
 		static double CreateColor(double r, double g, double b);
 
+		static void DrawRect(double x1, double y1, double x2, double y2, bool outline);
 		static void DrawSprite(double x, double y, double spriteID, double frameNumber);
 		static void DrawString(double x, double y, string text);
 		static void DrawStringColor(double x, double y, string text, double color);

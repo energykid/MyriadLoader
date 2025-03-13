@@ -9,8 +9,10 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include "nlohmann/json.hpp"
 
 using namespace std;
+using namespace nlohmann;
 
 namespace DatabaseLoader
 {
@@ -19,9 +21,11 @@ namespace DatabaseLoader
 	public:
 		static string GetSteamDirectory();
 		static string GetModsDirectory();
+		static string GetModSavesDirectory();
 		static std::vector<filesystem::path> GetImmediateSubfolders(const std::string& dir_path);
 		static bool CopyFileTo(const std::string& sourcePath, const std::string& destinationPath);
 		static std::vector<filesystem::path> GetFilesOfType(const std::string& dir_path, const std::string& extension);
 		static bool MakeDirectory(string dir_name);
+		static std::string GetFileContents(const std::string& filePath);
 	};
 }

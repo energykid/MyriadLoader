@@ -6,9 +6,11 @@
 #include <string>
 #include <stdexcept>
 #include "Files.h"
+#include "nlohmann/json.hpp"
 
 using namespace std;
 using namespace std::filesystem;
+using namespace nlohmann;
 
 string DatabaseLoader::Files::GetSteamDirectory()
 {
@@ -21,6 +23,11 @@ string DatabaseLoader::Files::GetSteamDirectory()
 string DatabaseLoader::Files::GetModsDirectory()
 {
     return DatabaseLoader::Files::GetSteamDirectory() + "DatabaseLoader/Mods";
+}
+
+string DatabaseLoader::Files::GetModSavesDirectory()
+{
+    return DatabaseLoader::Files::GetSteamDirectory() + "DatabaseLoader/Saves";
 }
 
 std::vector<filesystem::path> DatabaseLoader::Files::GetImmediateSubfolders(const std::string& dir_path)
@@ -55,6 +62,17 @@ bool DatabaseLoader::Files::MakeDirectory(string dir_name)
     {
         g_YYTKInterface->PrintInfo("[Myriad Loader] Directory created: " + dir_name);
     }
+}
+
+std::string DatabaseLoader::Files::GetFileContents(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return ""; // Returns an empty string if the file fails to open
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
 bool DatabaseLoader::Files::CopyFileTo(const std::string& sourcePath, const std::string& destinationPath) {

@@ -175,6 +175,7 @@
     <ClCompile Include="source\GMHooks.cpp" />
     <ClCompile Include="source\GMWrappers.cpp" />
     <ClCompile Include="source\ModuleMain.cpp" />
+    <ClCompile Include="source\SaverLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Aurie\shared.hpp" />
@@ -184,6 +185,8 @@
     <ClInclude Include="include\lua.hpp" />
     <ClInclude Include="include\luaconf.h" />
     <ClInclude Include="include\lualib.h" />
+    <ClInclude Include="include\nlohmann\json.hpp" />
+    <ClInclude Include="include\nlohmann\json_fwd.hpp" />
     <ClInclude Include="include\sol\config.hpp" />
     <ClInclude Include="include\sol\forward.hpp" />
     <ClInclude Include="include\sol\lapi.h" />
@@ -226,6 +229,7 @@
     <ClInclude Include="source\GMHooks.h" />
     <ClInclude Include="source\GMWrappers.h" />
     <ClInclude Include="source\ModuleMain.h" />
+    <ClInclude Include="source\SaverLoader.h" />
     <ClInclude Include="source\WeaponIDs.h" />
   </ItemGroup>
   <ItemGroup>
