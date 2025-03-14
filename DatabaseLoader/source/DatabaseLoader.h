@@ -93,10 +93,36 @@ namespace DatabaseLoader
 	inline sol::state dl_lua;
 	inline vector<sol::state> modState;
 
-	class MusicType {
+	inline sol::protected_function dummyFunction;
+
+	struct ContentData {
 	public:
-		MusicType(double num, const string name) : ID(num), Name(name) {}
-		double ID;
-		string Name;
+		std::string DataType;
+		std::string Name;
+
+		sol::protected_function Create = dummyFunction;
+
+		sol::protected_function Step = dummyFunction;
+
+		sol::protected_function Destroy = dummyFunction;
+
+		sol::protected_function TakeDamage = dummyFunction;
+
+		sol::protected_function Draw = dummyFunction;
+
+		sol::protected_function DrawUI = dummyFunction;
+
+		ContentData(const sol::table& data_table) :
+			DataType(data_table.get<string>("DataType")),
+			Name(data_table.get<string>("Name")),
+			Create(data_table.get_or("Create", dummyFunction)),
+			Step(data_table.get_or("Step", dummyFunction)),
+			Destroy(data_table.get_or("Destroy", dummyFunction)),
+			TakeDamage(data_table.get_or("TakeDamage", dummyFunction)),
+			Draw(data_table.get_or("Draw", dummyFunction)),
+			DrawUI(data_table.get_or("DrawUI", dummyFunction))
+		{}
 	};
+
+	inline vector<ContentData> AllData;
 }

@@ -95,23 +95,19 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 
 	double AttackDamage = (Arguments[0])->ToDouble();
 
-	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
 		if (is_custom)
 		{
-			if (modState.at(stateNum)["all_behaviors"])
 			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
+				for (double var = 0; var < AllData.size(); var++)
 				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
+					ContentData data = AllData[var];
 					{
-						if (tbl.get<string>("DataType") == "enemy")
+						if (data.DataType == "enemy")
 						{
-							if (tbl.get<string>("Name") == CustomDataString.ToString() || tbl.get<string>("Name") == "all")
+							if (data.Name == CustomDataString.ToString() || data.Name == "all")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+								sol::protected_function_result result = data.TakeDamage.call(InstanceID, AttackDamage);
 								if (!result.valid())
 								{
 									sol::error error = result;
@@ -126,19 +122,17 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 		}
 		else
 		{
-			if (modState.at(stateNum)["all_behaviors"])
+			//if (modState.at(stateNum)["all_behaviors"])
 			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
+				for (double var = 0; var < AllData.size(); var++)
 				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
+					ContentData data = AllData[var];
 					{
-						if (tbl.get<string>("DataType") == "enemy")
+						if (data.DataType == "enemy")
 						{
-							if (tbl.get<string>("Name") == ObjectIndexString.ToString() || tbl.get<string>("Name") == "all")
+							if (data.Name == ObjectIndexString.ToString() || data.Name == "all")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+								sol::protected_function_result result = data.TakeDamage.call(InstanceID, AttackDamage);
 								if (!result.valid())
 								{
 									sol::error error = result;
@@ -191,26 +185,23 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" }).ToString();
 	}
 
-	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
 		if (is_custom)
 		{
-			if (modState.at(stateNum)["all_behaviors"])
 			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
+				for (double var = 0; var < AllData.size(); var++)
 				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
+					ContentData data = AllData[var];
+					//if (modState.at(stateNum)["all_behaviors"][var])
 					{
-						if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
+						if (data.Name == CustomDataString || data.Name == "all")
 						{
-							if (tbl.get<string>("DataType") == "enemy")
+							if (data.DataType == "enemy")
 							{
 								// Create script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+									sol::protected_function_result result = data.Create.call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
@@ -221,7 +212,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// Destroy script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
+									sol::protected_function_result result = data.Destroy.call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
@@ -232,7 +223,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// Draw script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
+									sol::protected_function_result result = data.Draw.call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
@@ -248,24 +239,22 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 		}
 		else
 		{
-			if (modState.at(stateNum)["all_behaviors"])
 			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 1; var < count.size() + 1; var++)
+				for (double var = 0; var < AllData.size(); var++)
 				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
+					ContentData data = AllData[var];
+					//if (modState.at(stateNum)["all_behaviors"][var])
 					{
 						// Enemy scripts
-						if (tbl.get<string>("DataType") == "enemy")
+						if (data.DataType == "enemy")
 						{
-							if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-								|| tbl.get<string>("Name") == "all")
+							if (data.Name == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
+								|| data.Name == "all")
 							{
 								// Create script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+									sol::protected_function_result result = data.Create.call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
@@ -276,7 +265,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// Destroy script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
+									sol::protected_function_result result = data.Destroy.call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
@@ -287,7 +276,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// Draw script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
+									sol::protected_function_result result = data.Draw.call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
@@ -298,12 +287,12 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 							}
 						}
 						// Global scripts
-						if (tbl.get<string>("DataType") == "global")
+						if (data.DataType == "global")
 						{
 							// Draw script
 							if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
+								sol::protected_function_result result = data.DrawUI.call();
 								if (!result.valid())
 								{
 									sol::error error = result;
@@ -314,7 +303,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 							// DrawInGame script
 							if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
+								sol::protected_function_result result = data.Draw.call();
 								if (!result.valid())
 								{
 									sol::error error = result;

@@ -47,9 +47,11 @@ string GetUserDirectory() {
 
 static void RegisterData(sol::table data)
 {
-	sol::table tbl = modState[currentState]["all_behaviors"];
+	ContentData dt = ContentData(data);
 
-	modState[currentState]["all_behaviors"][tbl.size() + 1] = data;
+	AllData.push_back(dt);
+
+	g_YYTKInterface->PrintInfo(dt.DataType + " data created for object " + dt.Name + ".");
 }
 
 void UnloadMods()
@@ -89,36 +91,29 @@ void ObjectBehaviorRun(FWFrame& context)
 		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
 		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
 		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + (464 / 2);
+	}
 
-		if (modState.at(stateNum)["all_behaviors"])
+	for (double var = 0; var < AllData.size(); var++)
+	{
+		ContentData data = AllData[var];
+
+		if (data.DataType == "global")
 		{
-			sol::table count = modState.at(stateNum)["all_behaviors"];
-			for (double var = 0; var < count.size() + 1; var++)
+			data.Step.call();
+		}
+
+		if (data.Name == "all")
+		{
+			if (data.DataType == "enemy")
 			{
-				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-				if (modState.at(stateNum)["all_behaviors"][var])
-				{
-					if (g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)tbl.get<string>("Name") }) }))
-					{
-						if (tbl.get<string>("DataType") == "enemy" || tbl.get<string>("DataType") == "projectile")
-						{
-							DBLua::InvokeWithObjectIndex(tbl.get<string>("Name"), tbl["Step"]);
-						}
-					}
-
-					if (tbl.get<string>("Name") == "all")
-					{
-						if (tbl.get<string>("DataType") == "enemy")
-						{
-							DBLua::InvokeWithObjectIndex("obj_enemy", tbl["Step"]);
-						}
-					}
-
-					if (tbl.get<string>("DataType") == "global")
-					{
-						tbl["Step"].call();
-					}
-				}
+				DBLua::InvokeWithObjectIndex("obj_enemy", data.Step);
+			}
+		}
+		else
+		{
+			if (data.DataType == "enemy")
+			{
+				DBLua::InvokeWithObjectIndex(data.Name, data.Step);
 			}
 		}
 	}
@@ -160,14 +155,14 @@ sol::state GetModState()
 
 	inState["enemy_data"] = DBLua::EnemyData;
 
+	inState["projectile_data"] = DBLua::ProjectileData;
+
+	inState["global_data"] = DBLua::GlobalData;
+
 	inState["view_x"] = 0;
 	inState["view_y"] = 0;
 	inState["screen_center_x"] = 0;
 	inState["screen_center_y"] = 0;
-
-	inState["projectile_data"] = DBLua::ProjectileData;
-
-	inState["global_data"] = DBLua::GlobalData;
 
 	inState["register_data"] = RegisterData;
 
