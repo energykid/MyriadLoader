@@ -100,17 +100,12 @@ namespace DatabaseLoader
 		std::string DataType;
 		std::string Name;
 
-		sol::protected_function Create = dummyFunction;
-
-		sol::protected_function Step = dummyFunction;
-
-		sol::protected_function Destroy = dummyFunction;
-
-		sol::protected_function TakeDamage = dummyFunction;
-
-		sol::protected_function Draw = dummyFunction;
-
-		sol::protected_function DrawUI = dummyFunction;
+		std::function<void(double)> Create = [](double) {};
+		std::function<void(double)> Step = [](double) {};
+		std::function<void(double)> Destroy = [](double) {};
+		std::function<void(double, double)> TakeDamage = [](double, double) {};
+		std::function<void(double)> Draw = [](double) {};
+		std::function<void()> DrawUI = []() {};
 
 		ContentData(const sol::table& data_table) :
 			DataType(data_table.get<string>("DataType")),
@@ -124,5 +119,5 @@ namespace DatabaseLoader
 		{}
 	};
 
-	inline vector<ContentData> AllData;
+	static inline vector<ContentData> AllData;
 }

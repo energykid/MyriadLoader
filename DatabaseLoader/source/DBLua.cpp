@@ -129,7 +129,7 @@ AurieStatus DatabaseLoader::DBLua::CallBuiltinExLua(
 	return AURIE_SUCCESS;
 }
 
-void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_function func)
+void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, std::function<void(double)> func)
 {
 	RValue object_index = g_YYTKInterface->CallBuiltin(
 		"asset_get_index",
@@ -151,13 +151,7 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_
 			}
 		);
 
-		sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
-		if (!result.valid())
-		{
-			sol::error error = result;
-
-			g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-		}
+		func(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
 	}
 }
 

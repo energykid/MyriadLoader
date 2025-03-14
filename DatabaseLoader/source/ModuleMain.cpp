@@ -14,7 +14,7 @@
 #include "SaverLoader.h"
 #include <fstream>
 
-#pragma comment(lib, "lua54.lib")
+#pragma comment(lib, "lua51.lib")
 
 using namespace Aurie;
 using namespace DatabaseLoader;
@@ -93,28 +93,15 @@ void ObjectBehaviorRun(FWFrame& context)
 		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + (464 / 2);
 	}
 
+	context.Call();
+
 	for (double var = 0; var < AllData.size(); var++)
 	{
 		ContentData data = AllData[var];
 
 		if (data.DataType == "global")
 		{
-			data.Step.call();
-		}
-
-		if (data.Name == "all")
-		{
-			if (data.DataType == "enemy")
-			{
-				DBLua::InvokeWithObjectIndex("obj_enemy", data.Step);
-			}
-		}
-		else
-		{
-			if (data.DataType == "enemy")
-			{
-				DBLua::InvokeWithObjectIndex(data.Name, data.Step);
-			}
+			data.Step(0);
 		}
 	}
 };
@@ -312,7 +299,7 @@ EXPORTED AurieStatus ModuleInitialize(
 	yytk_interface->CreateCallback(
 		Module,
 		YYTK::EVENT_OBJECT_CALL,
-		GMHooks::EnemyData,
+		GMHooks::ContentDataEvents,
 		0);
 
 	yytk_interface->CreateCallback(
@@ -387,6 +374,8 @@ EXPORTED AurieStatus ModuleInitialize(
 		GMHooks::EnemyDamage,
 		&original_function
 	);
+
+	//gml_GlobalScript_player_takeHit - player data is next
 
 	return AURIE_SUCCESS;
 }

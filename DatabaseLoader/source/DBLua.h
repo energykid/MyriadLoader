@@ -17,7 +17,7 @@ namespace DatabaseLoader
 		static void SetString(double inst, string varName, string val);
 		static void SetArray(double inst, string varName, sol::table vals);
 	public:
-		static void InvokeWithObjectIndex(string Object, sol::protected_function func);
+		static void InvokeWithObjectIndex(string Object, std::function<void(double)> func);
 		static void InitVar(double inst, string varName, sol::object val);
 		static void SetVar(double inst, string varName, sol::object val);
 		static void InitGlobal(string varName, sol::object val);

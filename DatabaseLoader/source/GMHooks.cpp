@@ -60,7 +60,7 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CIn
 
 	RValue snd = *Arguments[0];
 	
-	if (snd.ToDouble() > 267)
+	if (snd.ToDouble() > 500)
 	{
 		RValue Sound = g_YYTKInterface->CallBuiltin("audio_play_sound", { snd, 0, true });
 		GMWrappers::SetGlobal("current_music", Sound);
@@ -87,60 +87,41 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 	RValue ObjectIndexString = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex });
 
 	bool is_custom = false;
-	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomData" }).ToBoolean())
+	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomEnemyName" }).ToBoolean())
 	{
 		is_custom = true;
-		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" });
+		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomEnemyName" });
 	}
 
 	double AttackDamage = (Arguments[0])->ToDouble();
 
+	if (is_custom)
 	{
-		if (is_custom)
+		for (double var = 0; var < AllData.size(); var++)
 		{
+			ContentData data = AllData[var];
 			{
-				for (double var = 0; var < AllData.size(); var++)
+				if (data.DataType == "enemy")
 				{
-					ContentData data = AllData[var];
+					if (data.Name == CustomDataString.ToString() || data.Name == "all")
 					{
-						if (data.DataType == "enemy")
-						{
-							if (data.Name == CustomDataString.ToString() || data.Name == "all")
-							{
-								sol::protected_function_result result = data.TakeDamage.call(InstanceID, AttackDamage);
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
-							}
-						}
+						data.TakeDamage(InstanceID, AttackDamage);
 					}
 				}
 			}
 		}
-		else
+	}
+	else
+	{
+		for (double var = 0; var < AllData.size(); var++)
 		{
-			//if (modState.at(stateNum)["all_behaviors"])
+			ContentData data = AllData[var];
 			{
-				for (double var = 0; var < AllData.size(); var++)
+				if (data.DataType == "enemy")
 				{
-					ContentData data = AllData[var];
+					if (data.Name == ObjectIndexString.ToString() || data.Name == "all")
 					{
-						if (data.DataType == "enemy")
-						{
-							if (data.Name == ObjectIndexString.ToString() || data.Name == "all")
-							{
-								sol::protected_function_result result = data.TakeDamage.call(InstanceID, AttackDamage);
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
-							}
-						}
+						data.TakeDamage(InstanceID, AttackDamage);
 					}
 				}
 			}
@@ -149,7 +130,7 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 	return Result;
 }
 
-void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
+void DatabaseLoader::GMHooks::ContentDataEvents(FWCodeEvent& FunctionContext)
 {
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
 
@@ -169,6 +150,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
 
 	string CustomDataString = "";
+	string ObjectIndexString = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
 
 	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
@@ -179,139 +161,111 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 	}
 
 	bool is_custom = false;
-	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomData" }).ToBoolean())
+	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "dbl_CustomEnemyName" }).ToBoolean())
 	{
 		is_custom = true;
-		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomData" }).ToString();
+		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "dbl_CustomEnemyName" }).ToString();
 	}
 
+	if (!is_custom)
 	{
-		if (is_custom)
+		for (double var = 0; var < AllData.size(); var++)
 		{
+			ContentData data = AllData[var];
+
+			// Global scripts
+			if (data.DataType == "global")
 			{
-				for (double var = 0; var < AllData.size(); var++)
+				// Draw script
+				if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
 				{
-					ContentData data = AllData[var];
-					//if (modState.at(stateNum)["all_behaviors"][var])
+					data.DrawUI();
+					return;
+				}
+				// DrawInGame script
+				if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
+				{
+					data.Draw(0);
+					return;
+				}
+			}
+			// Individual object scripts
+			else if (data.Name == ObjectIndexString || data.Name == "all")
+			{
+				// Enemy scripts
+				if (data.DataType == "enemy")
+				{
+					// Create script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 					{
-						if (data.Name == CustomDataString || data.Name == "all")
+						data.Create(InstanceID);
+						return;
+					}
+					// Destroy script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
+					{
+						data.Destroy(InstanceID);
+						return;
+					}
+					// Draw script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
+					{
+						data.Draw(InstanceID);
+						return;
+					}
+					// Step script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Step_1")
+					{
+						if (ObjectIndexString != "obj_void_tentacle_segment") // Make an exception in on-step calls for trespasser tentacle segments
 						{
-							if (data.DataType == "enemy")
+							data.Step(InstanceID);
+							return;
+						}
+						if (ObjectIndexString == "obj_void_tentacle_segment") // ...unless the eye is open
+						{
+							if (g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "open" }).ToBoolean() == true)
 							{
-								// Create script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
-								{
-									sol::protected_function_result result = data.Create.call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
-								// Destroy script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-								{
-									sol::protected_function_result result = data.Destroy.call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
-								// Draw script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
-								{
-									sol::protected_function_result result = data.Draw.call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
+								data.Step(InstanceID);
+								return;
 							}
 						}
 					}
 				}
 			}
 		}
-		else
+	}
+	else
+	{
+		for (double var = 0; var < AllData.size(); var++)
 		{
+			ContentData data = AllData[var];
+			if (data.Name == CustomDataString || data.Name == "all")
 			{
-				for (double var = 0; var < AllData.size(); var++)
+				if (data.DataType == "enemy")
 				{
-					ContentData data = AllData[var];
-					//if (modState.at(stateNum)["all_behaviors"][var])
+					// Create script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 					{
-						// Enemy scripts
-						if (data.DataType == "enemy")
-						{
-							if (data.Name == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-								|| data.Name == "all")
-							{
-								// Create script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
-								{
-									sol::protected_function_result result = data.Create.call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
-								// Destroy script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-								{
-									sol::protected_function_result result = data.Destroy.call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
-								// Draw script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
-								{
-									sol::protected_function_result result = data.Draw.call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
-							}
-						}
-						// Global scripts
-						if (data.DataType == "global")
-						{
-							// Draw script
-							if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
-							{
-								sol::protected_function_result result = data.DrawUI.call();
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
-							}
-							// DrawInGame script
-							if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
-							{
-								sol::protected_function_result result = data.Draw.call();
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
-							}
-						}
+						data.Create(InstanceID);
+						return;
+					}
+					// Destroy script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
+					{
+						data.Destroy(InstanceID);
+						return;
+					}
+					// Draw script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
+					{
+						data.Draw(InstanceID);
+						return;
+					}
+					// Step script
+					if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Step_1")
+					{
+						data.Step(InstanceID);
+						return;
 					}
 				}
 			}
