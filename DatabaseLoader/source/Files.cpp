@@ -61,7 +61,9 @@ bool DatabaseLoader::Files::MakeDirectory(string dir_name)
     if (std::filesystem::create_directories(dir_name))
     {
         g_YYTKInterface->PrintInfo("[Myriad Loader] Directory created: " + dir_name);
+        return true;
     }
+    return false;
 }
 
 std::string DatabaseLoader::Files::GetFileContents(const std::string& filePath)
