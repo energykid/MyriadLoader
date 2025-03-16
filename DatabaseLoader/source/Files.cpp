@@ -22,12 +22,12 @@ string DatabaseLoader::Files::GetSteamDirectory()
 
 string DatabaseLoader::Files::GetModsDirectory()
 {
-    return DatabaseLoader::Files::GetSteamDirectory() + "DatabaseLoader/Mods";
+    return DatabaseLoader::Files::GetSteamDirectory() + "MyriadLoader/Mods";
 }
 
 string DatabaseLoader::Files::GetModSavesDirectory()
 {
-    return DatabaseLoader::Files::GetSteamDirectory() + "DatabaseLoader/Saves";
+    return DatabaseLoader::Files::GetSteamDirectory() + "MyriadLoader/Saves";
 }
 
 std::vector<filesystem::path> DatabaseLoader::Files::GetImmediateSubfolders(const std::string& dir_path)
@@ -58,10 +58,12 @@ vector<filesystem::path> DatabaseLoader::Files::GetFilesOfType(const string& dir
 
 bool DatabaseLoader::Files::MakeDirectory(string dir_name)
 {
-    if (std::filesystem::create_directories(dir_name))
+    bool dir = std::filesystem::create_directories(dir_name);
+    if (dir)
     {
         g_YYTKInterface->PrintInfo("[Myriad Loader] Directory created: " + dir_name);
     }
+    return dir;
 }
 
 std::string DatabaseLoader::Files::GetFileContents(const std::string& filePath)
