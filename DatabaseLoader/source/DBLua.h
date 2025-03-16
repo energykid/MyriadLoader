@@ -18,6 +18,7 @@ namespace DatabaseLoader
 		static void SetArray(double inst, string varName, sol::table vals);
 	public:
 		static void InvokeWithObjectIndex(string Object, sol::protected_function func);
+		static void InvokeWithCustomData(string Name, sol::protected_function func);
 		static void InitVar(double inst, string varName, sol::object val);
 		static void SetVar(double inst, string varName, sol::object val);
 		static void InitGlobal(string varName, sol::object val);
@@ -31,7 +32,7 @@ namespace DatabaseLoader
 		static double GetCustomSound(string path);
 		static double GetCustomMusic(string path, string musicName);
 		static void UnlockSong(double songName);
-		static double GetCustomSprite(string path, double imgnum, double xorig, double yorig);
+		static double GetCustomSprite(string path, double imgnum, double xorig, double yorig, double frames);
 
 		static void DoSound(double soundType, double x);
 		static void DoSoundExt(double soundType, double pitch, double gain, double x);
@@ -41,6 +42,7 @@ namespace DatabaseLoader
 		static void CallGameFunction(string name, sol::table args);
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
+		static double SpawnEnemy(double x, double y, string name);
 
 		static void DrawSetDepth(double dep);
 		static void DrawSetColor(double col);
@@ -53,9 +55,12 @@ namespace DatabaseLoader
 		static void DrawStringColor(double x, double y, string text, double color);
 		static void DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha);
 
+		static sol::table DirectionTo(double x1, double y1, double x2, double y2);
+
 		static sol::table EnemyData(string name);
 		static sol::table ProjectileData(string name);
 		static sol::table GlobalData();
+		static sol::table PlayerData();
 
 		static RValue CallBuiltinLua(
 			IN const char* FunctionName,

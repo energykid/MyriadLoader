@@ -3,7 +3,6 @@
 #include "YYToolkit/YYTK_Shared.hpp"
 #include "DBLua.h"
 #include "GMWrappers.h"
-#include "DatabaseLoader.h"
 #include "ModuleMain.h"
 #include "Files.h"
 #include <map>
@@ -157,6 +156,42 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_
 			sol::error error = result;
 
 			g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+		}
+	}
+}
+void DatabaseLoader::DBLua::InvokeWithCustomData(string Name, sol::protected_function func)
+{
+	RValue object_index = g_YYTKInterface->CallBuiltin(
+		"asset_get_index",
+		{ "obj_enemy" }
+	);
+
+	int64_t object_count = static_cast<int64_t>(g_YYTKInterface->CallBuiltin(
+		"instance_number",
+		{ object_index }
+	).ToDouble());
+
+	for (int64_t i = 0; i < object_count; i++)
+	{
+		RValue instance = g_YYTKInterface->CallBuiltin(
+			"instance_find",
+			{
+				object_index,
+				i
+			}
+		);
+
+		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { instance, "myr_CustomName" }))
+		{
+			if (g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "myr_CustomName" }).ToString() == Name)
+			{
+				sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
+				if (!result.valid())
+				{
+					sol::error error = result;
+					g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+				}
+			}
 		}
 	}
 }
@@ -394,7 +429,7 @@ Register a custom sound effect from the provided file path.
 */
 double DatabaseLoader::DBLua::GetCustomSound(string path)
 {
-	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
+	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("MyriadLoader/Mods/" + path) });
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("snd_list"), snd });
 
@@ -410,13 +445,13 @@ Register a custom music piece from the provided file path, then add it to the ju
 */
 double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 {
-	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
+	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("MyriadLoader/Mods/" + path) });
 
-	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "dbl_CustomMusicList" }))
+	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "myr_CustomMusicList" }))
 	{
-		g_YYTKInterface->CallBuiltin("variable_global_set", { "dbl_CustomMusicList", g_YYTKInterface->CallBuiltin("array_create", {}) });
+		g_YYTKInterface->CallBuiltin("variable_global_set", { "myr_CustomMusicList", g_YYTKInterface->CallBuiltin("array_create", {}) });
 	}
-	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "dbl_CustomMusicList" }), snd });
+	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "myr_CustomMusicList" }), snd });
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
@@ -448,9 +483,13 @@ Unlock the provided music piece at the jukebox.
 @param yorig the y position in pixels of the sprite's origin  
 @return the sprite ID assigned to the texture
 */
-double DatabaseLoader::DBLua::GetCustomSprite(string path, double imgnum, double xorig, double yorig)
+double DatabaseLoader::DBLua::GetCustomSprite(string path, double imgnum, double xorig, double yorig, double frames)
 {
-	return g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("DatabaseLoader/Mods/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
+	RValue a = g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("MyriadLoader/Mods/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
+
+	g_YYTKInterface->CallBuiltin("sprite_set_speed", {a, frames, 0});
+
+	return a.ToDouble();
 }
 
 /***
@@ -589,6 +628,59 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 	return part.ToDouble();
 }
 
+double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
+{
+	RValue enemyAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)name });
+	RValue enemyExists = g_YYTKInterface->CallBuiltin("object_exists", { enemyAsset });
+
+	if (enemyExists)
+	{
+		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
+			g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)name}) });
+		return enemy.ToDouble();
+	}
+	else
+	{
+		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
+			g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_swarmer"}) });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "myr_CustomName", (string_view)name });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "hat", 0 });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
+
+		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+		{
+			if (modState.at(stateNum)["all_behaviors"])
+			{
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
+				{
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
+					{
+						if (tbl.get<string>("DataType") == "enemy")
+						{
+							if (tbl.get<string>("Name") == name)
+							{
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
+								if (!result.valid())
+								{
+									sol::error error = result;
+
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return enemy.ToDouble();
+	}
+
+	return 0.0;
+}
+
 /***
 Sets the depth for draw functions.
 @function draw_set_depth
@@ -650,6 +742,16 @@ void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, d
 	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
 }
 
+sol::table DatabaseLoader::DBLua::DirectionTo(double x1, double y1, double x2, double y2)
+{
+	RValue dir = g_YYTKInterface->CallBuiltin("point_direction", {x1, y1, x2, y2});
+
+	RValue x = g_YYTKInterface->CallBuiltin("lengthdir_x", { 1, dir });
+	RValue y = g_YYTKInterface->CallBuiltin("lengthdir_y", { 1, dir });
+
+	return modState[currentState].create_table_with("x", x.ToDouble(), "y", y.ToDouble());
+}
+
 sol::table DatabaseLoader::DBLua::EnemyData(string name)
 {
 	return modState[currentState].create_table_with(
@@ -669,7 +771,7 @@ sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 		"Name", name,
 		"Create", [](double) {},
 		"Step", [](double) {},
-		"Destroy", [](double) {},
+		"CollideWith", [](double, double) {},
 		"Draw", [](double) {});
 }
 
@@ -680,4 +782,13 @@ sol::table DatabaseLoader::DBLua::GlobalData()
 		"Step", []() {},
 		"Draw", []() {},
 		"DrawUI", []() {});
+}
+
+sol::table DatabaseLoader::DBLua::PlayerData()
+{
+	return modState[currentState].create_table_with(
+		"DataType", "player",
+		"Step", [](double) {},
+		"TakeDamage", [](double, double) {},
+		"Draw", [](double) {});
 }

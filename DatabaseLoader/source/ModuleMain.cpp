@@ -62,7 +62,7 @@ void UnloadMods()
 	{
 		currentState = i;
 
-		modState[currentState]["dbl_unload"].call();
+		modState[currentState]["mod_unload"].call();
 
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
 	}
@@ -88,7 +88,18 @@ void ObjectBehaviorRun(FWFrame& context)
 		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
 		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
 		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
-		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + (464 / 2);
+		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_y") + (464 / 2);
+
+		RValue playerAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_player" });
+		RValue player = g_YYTKInterface->CallBuiltin("instance_find", { playerAsset, 0 });
+
+		if (player.ToDouble() != -4)
+		{
+			modState.at(stateNum)["player_x"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "x" }).ToDouble();
+			modState.at(stateNum)["player_y"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "y" }).ToDouble();
+		}
+
+		modState.at(stateNum)["player"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "id" }).ToDouble();
 
 		if (modState.at(stateNum)["all_behaviors"])
 		{
@@ -116,7 +127,7 @@ void ObjectBehaviorRun(FWFrame& context)
 
 					if (tbl.get<string>("DataType") == "global")
 					{
-						tbl["Step"].call();
+						modState.at(stateNum)["all_behaviors"][var]["Step"].call();
 					}
 				}
 			}
@@ -158,16 +169,17 @@ sol::state GetModState()
 
 	inState["object_behaviors"] = inState.create_table();
 
-	inState["enemy_data"] = DBLua::EnemyData;
-
 	inState["view_x"] = 0;
 	inState["view_y"] = 0;
+	inState["player_x"] = 0;
+	inState["player_y"] = 0;
 	inState["screen_center_x"] = 0;
 	inState["screen_center_y"] = 0;
 
+	inState["enemy_data"] = DBLua::EnemyData;
 	inState["projectile_data"] = DBLua::ProjectileData;
-
 	inState["global_data"] = DBLua::GlobalData;
+	inState["player_data"] = DBLua::PlayerData;
 
 	inState["register_data"] = RegisterData;
 
@@ -209,7 +221,7 @@ sol::state GetModState()
 
 	inState["custom_music"] = DBLua::GetCustomMusic;
 
-	inState["unlock_song"] = DBLua::UnlockSong;
+	//inState["unlock_song"] = DBLua::UnlockSong;
 
 	inState["get_asset"] = DBLua::GetAsset;
 
@@ -241,6 +253,10 @@ sol::state GetModState()
 	inState["draw_set_color"] = DBLua::DrawSetColor;
 	inState["draw_set_colour"] = DBLua::DrawSetColor;
 
+	inState["spawn_enemy"] = DBLua::SpawnEnemy;
+
+	inState["get_direction"] = DBLua::DirectionTo;
+
 	return inState;
 }
 
@@ -249,11 +265,17 @@ int LoadFileRequire(lua_State* L)
 	std::string path = sol::stack::get<std::string>(L);
 
 	std::string script = Files::GetFileContents(Files::GetModsDirectory() + "/" + path + ".lua");
+	std::string script2 = Files::GetFileContents(Files::GetModsDirectory() + "/" + path);
 
 	if (script != "")
 	{
 		g_YYTKInterface->Print(CM_LIGHTGREEN, "[Myriad Loader] Loaded module " + path);
 		luaL_loadbuffer(L, script.data(), script.size(), path.c_str());
+	}
+	else if (script2 != "")
+	{
+		g_YYTKInterface->Print(CM_LIGHTGREEN, "[Myriad Loader] Loaded module " + path);
+		luaL_loadbuffer(L, script2.data(), script2.size(), path.c_str());
 	}
 	else
 	{
@@ -307,9 +329,12 @@ EXPORTED AurieStatus ModuleInitialize(
 
 		modState[currentState]["all_behaviors"] = modState[currentState].create_table();
 
-		modState[currentState].script_file(mods[i].string() + "/main.lua");
+		if (std::filesystem::exists(mods[i].string() + "/main.lua"))
+		{
+			modState[currentState].script_file(mods[i].string() + "/main.lua");
 
-		modState[currentState]["dbl_load"].call();
+			modState[currentState]["mod_load"].call();
+		}
 
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
 	}
@@ -390,6 +415,18 @@ EXPORTED AurieStatus ModuleInitialize(
 		"EnemyDamage",
 		script_data->m_Functions->m_ScriptFunction,
 		GMHooks::EnemyDamage,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_player_takeHit",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"PlayerTakeHit",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::PlayerTakeHit,
 		&original_function
 	);
 
