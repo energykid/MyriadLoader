@@ -641,8 +641,12 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 	}
 	else
 	{
+		// The object name (between swarmers for regular enemies, and the templates for the other two types of enemies)
+		string ObjectToSpawn = "obj_swarmer";
+		if (std::find(customMinibossNames.begin(), customMinibossNames.end(), name) != customMinibossNames.end()) ObjectToSpawn = "obj_miniboss_template";
+
 		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
-			g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_swarmer"}) });
+			g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)ObjectToSpawn }) });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "myr_CustomName", (string_view)name });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
 
@@ -678,6 +682,19 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 	}
 
 	return 0.0;
+}
+
+double DatabaseLoader::DBLua::SpawnProjectile(double x, double y, double xvel, double yvel, double sprite)
+{
+	RValue proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bullet_type"})});
+
+	double id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
+
+	SetDouble(id, "hspeed", xvel);
+	SetDouble(id, "hspeed", xvel);
+	SetDouble(id, "sprite_index", sprite);
+
+	return proj.ToDouble();
 }
 
 double DatabaseLoader::DBLua::GetLoop()
@@ -761,6 +778,8 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 	return modState[currentState].create_table_with(
 		"DataType", "enemy",
 		"Name", name,
+		"Miniboss", false,
+		"Boss", false,
 		"Create", [](double) {},
 		"Step", [](double) {},
 		"Destroy", [](double) {},

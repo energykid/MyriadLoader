@@ -212,6 +212,14 @@ RValue& DatabaseLoader::GMHooks::SpawnRoomObject(IN CInstance* Self, IN CInstanc
 			enemyFound = true;
 		}
 	}
+	for (size_t i = 0; i < customMinibossNames.size(); i++)
+	{
+		if (Arguments[2]->ToDouble() == Files::HashString(customMinibossNames[i]))
+		{
+			Result = DBLua::SpawnEnemy(Arguments[0]->ToDouble(), Arguments[1]->ToDouble(), customMinibossNames[i]);
+			enemyFound = true;
+		}
+	}
 	if (!enemyFound)
 	{
 		RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
@@ -226,6 +234,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 	//Enemy data
 	AllNames.push_back("gml_Object_obj_enemy_Create_0");
 	AllNames.push_back("gml_Object_obj_swarmer_Step_0");
+	AllNames.push_back("gml_Object_obj_miniboss_template_Step_0");
 	AllNames.push_back("gml_Object_obj_enemy_Draw_0");
 	AllNames.push_back("gml_Object_obj_enemy_Destroy_0");
 	//Projectile data
@@ -343,6 +352,20 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 											sol::error error = result;
 
 											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+										}
+									}
+									// Miniboss step script
+									if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Step_0")
+									{
+										if (tbl.get<bool>("Miniboss") == true)
+										{
+											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
+											if (!result.valid())
+											{
+												sol::error error = result;
+
+												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+											}
 										}
 									}
 								}

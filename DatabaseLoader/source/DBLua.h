@@ -43,6 +43,7 @@ namespace DatabaseLoader
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
 		static double SpawnEnemy(double x, double y, string name);
+		static double SpawnProjectile(double x, double y, double xvel, double yvel, double sprite);
 		static double IsHardMode();
 		static double GetLoop();
 

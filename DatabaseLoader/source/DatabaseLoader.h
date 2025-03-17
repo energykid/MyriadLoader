@@ -94,6 +94,8 @@ namespace DatabaseLoader
 	inline vector<sol::state> modState;
 
 	inline vector<string> customEnemyNames;
+	inline vector<string> customMinibossNames;
+	inline vector<string> customBossNames;
 
 	class MusicType {
 	public:

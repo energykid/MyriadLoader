@@ -54,12 +54,24 @@ static void RegisterData(sol::table data)
 	RValue enemytype = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)data.get<string>("Name") });
 
 	string getName = data.get<string>("Name");
+	string getType = data.get<string>("DataType");
 
-	if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
+	if (getType == "enemy" && getName != "all")
 	{
-		if (std::find(customEnemyNames.begin(), customEnemyNames.end(), getName) == customEnemyNames.end())
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
 		{
-			if (getName != "" && getName != "all")
+			if (data.get<bool>("Miniboss") == true)
+			{
+				if (std::find(customMinibossNames.begin(), customMinibossNames.end(), getName) == customMinibossNames.end())
+				{
+					int id = Files::HashString(getName);
+
+					g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), id, id });
+					customMinibossNames.push_back(getName);
+					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created miniboss '" + getName + "' with numeric ID: " + to_string(id));
+				}
+			}
+			else if (std::find(customEnemyNames.begin(), customEnemyNames.end(), getName) == customEnemyNames.end())
 			{
 				int id = Files::HashString(getName);
 
@@ -273,6 +285,7 @@ sol::state GetModState()
 	inState["draw_set_colour"] = DBLua::DrawSetColor;
 
 	inState["spawn_enemy"] = DBLua::SpawnEnemy;
+	inState["spawn_projectile"] = DBLua::SpawnProjectile;
 
 	inState["get_direction"] = DBLua::DirectionTo;
 
