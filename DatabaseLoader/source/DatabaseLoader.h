@@ -93,6 +93,8 @@ namespace DatabaseLoader
 	inline sol::state dl_lua;
 	inline vector<sol::state> modState;
 
+	inline vector<string> customEnemyNames;
+
 	class MusicType {
 	public:
 		MusicType(double num, const string name) : ID(num), Name(name) {}

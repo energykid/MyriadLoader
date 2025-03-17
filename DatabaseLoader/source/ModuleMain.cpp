@@ -50,6 +50,25 @@ static void RegisterData(sol::table data)
 	sol::table tbl = modState[currentState]["all_behaviors"];
 
 	modState[currentState]["all_behaviors"][tbl.size() + 1] = data;
+
+	RValue enemytype = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)data.get<string>("Name") });
+
+	string getName = data.get<string>("Name");
+
+	if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
+	{
+		if (std::find(customEnemyNames.begin(), customEnemyNames.end(), getName) == customEnemyNames.end())
+		{
+			if (getName != "" && getName != "all")
+			{
+				int id = Files::HashString(getName);
+
+				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), id, id });
+				customEnemyNames.push_back(getName);
+				g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created enemy '" + getName + "' with numeric ID: " + to_string(id));
+			}
+		}
+	}
 }
 
 void UnloadMods()
@@ -97,9 +116,8 @@ void ObjectBehaviorRun(FWFrame& context)
 		{
 			modState.at(stateNum)["player_x"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "x" }).ToDouble();
 			modState.at(stateNum)["player_y"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "y" }).ToDouble();
+			modState.at(stateNum)["player"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "id" }).ToDouble();
 		}
-
-		modState.at(stateNum)["player"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "id" }).ToDouble();
 
 		if (modState.at(stateNum)["all_behaviors"])
 		{
@@ -171,6 +189,7 @@ sol::state GetModState()
 
 	inState["view_x"] = 0;
 	inState["view_y"] = 0;
+	inState["player"] = 0;
 	inState["player_x"] = 0;
 	inState["player_y"] = 0;
 	inState["screen_center_x"] = 0;
@@ -427,6 +446,18 @@ EXPORTED AurieStatus ModuleInitialize(
 		"PlayerTakeHit",
 		script_data->m_Functions->m_ScriptFunction,
 		GMHooks::PlayerTakeHit,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_instance_create",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"SpawnRoomObject",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::SpawnRoomObject,
 		&original_function
 	);
 
