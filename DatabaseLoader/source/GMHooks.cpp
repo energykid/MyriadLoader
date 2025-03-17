@@ -3,6 +3,8 @@
 #include "DatabaseLoader.h"
 #include "GMWrappers.h"
 #include "GMHooks.h"
+#include "DBLua.h"
+#include "Files.h"
 #include "YYToolkit/YYTK_Shared.hpp"
 
 using namespace DatabaseLoader;
@@ -173,16 +175,21 @@ RValue& DatabaseLoader::GMHooks::PlayerTakeHit(IN CInstance* Self, IN CInstance*
 					if (tbl.get<string>("DataType") == "player")
 					{
 						RValue Instance = Self->ToRValue();
+						RValue ImmuneFrames;
+						g_YYTKInterface->CallBuiltinEx(ImmuneFrames, "alarm_get", Self, Other, { 1 });
 						double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
 
 						double AttackDamage = (Arguments[0])->ToDouble();
 
-						sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-						if (!result.valid())
+						if (ImmuneFrames.ToDouble() <= 0)
 						{
-							sol::error error = result;
+							sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
+							if (!result.valid())
+							{
+								sol::error error = result;
 
-							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
 						}
 					}
 				}
@@ -190,6 +197,26 @@ RValue& DatabaseLoader::GMHooks::PlayerTakeHit(IN CInstance* Self, IN CInstance*
 		}
 	}
 
+	return Result;
+}
+
+RValue& DatabaseLoader::GMHooks::SpawnRoomObject(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	auto original_function = reinterpret_cast<decltype(&SpawnRoomObject)>(MmGetHookTrampoline(g_ArSelfModule, "SpawnRoomObject"));
+	bool enemyFound = false;
+	for (size_t i = 0; i < customEnemyNames.size(); i++)
+	{
+		if (Arguments[2]->ToDouble() == Files::HashString(customEnemyNames[i]))
+		{
+			Result = DBLua::SpawnEnemy(Arguments[0]->ToDouble(), Arguments[1]->ToDouble(), customEnemyNames[i]);
+			enemyFound = true;
+		}
+	}
+	if (!enemyFound)
+	{
+		RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+	}
+	
 	return Result;
 }
 
@@ -452,7 +479,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 							// Global scripts
 							if (tbl.get<string>("DataType") == "global")
 							{
-								// Draw script
+								// DrawUI script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
 								{
 									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
@@ -463,7 +490,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
 									}
 								}
-								// DrawInGame script
+								// Draw script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
 								{
 									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();

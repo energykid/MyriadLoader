@@ -77,6 +77,12 @@ std::string DatabaseLoader::Files::GetFileContents(const std::string& filePath)
     return buffer.str();
 }
 
+int DatabaseLoader::Files::HashString(string name)
+{
+    std::hash<std::string> hash_fn;
+    return 300 + (hash_fn(name) % 5000);
+}
+
 bool DatabaseLoader::Files::CopyFileTo(const std::string& sourcePath, const std::string& destinationPath) {
     std::ifstream sourceFile(sourcePath, std::ios::binary);
     if (!sourceFile.is_open()) {

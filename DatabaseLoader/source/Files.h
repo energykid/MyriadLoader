@@ -27,5 +27,6 @@ namespace DatabaseLoader
 		static std::vector<filesystem::path> GetFilesOfType(const std::string& dir_path, const std::string& extension);
 		static bool MakeDirectory(string dir_name);
 		static std::string GetFileContents(const std::string& filePath);
+		static int HashString(string name);
 	};
 }

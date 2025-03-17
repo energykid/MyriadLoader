@@ -644,7 +644,6 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
 			g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_swarmer"}) });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "myr_CustomName", (string_view)name });
-		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "hat", 0 });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
@@ -679,6 +678,11 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 	}
 
 	return 0.0;
+}
+
+double DatabaseLoader::DBLua::GetLoop()
+{
+	return GMWrappers::CallGameScript("get_loop", {}).ToDouble();
 }
 
 /***

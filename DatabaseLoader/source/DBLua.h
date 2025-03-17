@@ -43,6 +43,8 @@ namespace DatabaseLoader
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
 		static double SpawnEnemy(double x, double y, string name);
+		static double IsHardMode();
+		static double GetLoop();
 
 		static void DrawSetDepth(double dep);
 		static void DrawSetColor(double col);
