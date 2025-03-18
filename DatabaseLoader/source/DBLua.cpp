@@ -686,20 +686,20 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 
 double DatabaseLoader::DBLua::SpawnProjectile(double x, double y, double xvel, double yvel, double sprite)
 {
-	RValue proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bullet_type"})});
+	RValue proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bullet_type"})});
 
 	double id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
 
 	SetDouble(id, "hspeed", xvel);
-	SetDouble(id, "hspeed", xvel);
+	SetDouble(id, "vspeed", yvel);
 	SetDouble(id, "sprite_index", sprite);
 
 	return proj.ToDouble();
 }
 
-double DatabaseLoader::DBLua::GetLoop()
+void DatabaseLoader::DBLua::AddCallbackTo(double id, sol::protected_function function)
 {
-	return GMWrappers::CallGameScript("get_loop", {}).ToDouble();
+
 }
 
 /***

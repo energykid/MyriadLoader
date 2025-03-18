@@ -97,6 +97,15 @@ namespace DatabaseLoader
 	inline vector<string> customMinibossNames;
 	inline vector<string> customBossNames;
 
+	struct ScriptCallback {
+		string scriptName;
+		sol::protected_function function;
+
+		ScriptCallback(string name, sol::protected_function func) : scriptName(name), function(func) {}
+	};
+
+	inline vector<ScriptCallback> callbacks;
+
 	class MusicType {
 	public:
 		MusicType(double num, const string name) : ID(num), Name(name) {}
