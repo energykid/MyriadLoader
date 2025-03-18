@@ -649,6 +649,8 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 			g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)ObjectToSpawn }) });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "myr_CustomName", (string_view)name });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
+		if (ObjectToSpawn == "obj_miniboss_template")
+			g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "damage_source_id", 61 });
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
