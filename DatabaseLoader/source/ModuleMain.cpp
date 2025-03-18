@@ -116,6 +116,9 @@ void ObjectBehaviorRun(FWFrame& context)
 	
 	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
+		modState.at(stateNum)["hard_mode"] = GMWrappers::GetGlobal("hardmode");
+		modState.at(stateNum)["paused"] = g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_pause"})});
+		modState.at(stateNum)["loop"] = GMWrappers::CallGameScript("get_loop", {-4});
 		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
 		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
 		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
@@ -199,6 +202,9 @@ sol::state GetModState()
 
 	inState["object_behaviors"] = inState.create_table();
 
+	inState["hard_mode"] = false;
+	inState["paused"] = false;
+	inState["loop"] = 0;
 	inState["view_x"] = 0;
 	inState["view_y"] = 0;
 	inState["player"] = 0;
