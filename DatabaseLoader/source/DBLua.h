@@ -65,6 +65,8 @@ namespace DatabaseLoader
 		static sol::table GlobalData();
 		static sol::table PlayerData();
 
+		static void AddRoomsTo(string sourceName, string destinationName);
+
 		static RValue CallBuiltinLua(
 			IN const char* FunctionName,
 			IN std::vector<RValue> Arguments

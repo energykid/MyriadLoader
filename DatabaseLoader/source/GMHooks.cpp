@@ -228,6 +228,65 @@ RValue& DatabaseLoader::GMHooks::SpawnRoomObject(IN CInstance* Self, IN CInstanc
 	return Result;
 }
 
+RValue& DatabaseLoader::GMHooks::WriteSaveData(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	g_YYTKInterface->CallBuiltin("array_resize", { GMWrappers::GetGlobal("gen_list"), 289 });
+
+	auto original_function = reinterpret_cast<decltype(&WriteSaveData)>(MmGetHookTrampoline(g_ArSelfModule, "WriteSaveData"));
+
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+
+	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
+
+	for (size_t i = size; i <= 5300; i++)
+	{
+		g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), i, i });
+	}
+
+	return Result;
+}
+
+RValue& DatabaseLoader::GMHooks::WriteMidSave(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	g_YYTKInterface->CallBuiltin("array_resize", { GMWrappers::GetGlobal("gen_list"), 289 });
+
+	auto original_function = reinterpret_cast<decltype(&WriteMidSave)>(MmGetHookTrampoline(g_ArSelfModule, "WriteMidSave"));
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+
+	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
+
+	for (size_t i = size; i <= 5300; i++)
+	{
+		g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), i, i });
+	}
+
+	return Result;
+}
+
+RValue& DatabaseLoader::GMHooks::ExitGame(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	auto original_function = reinterpret_cast<decltype(&ExitGame)>(MmGetHookTrampoline(g_ArSelfModule, "ExitGame"));
+
+	for (size_t i = 0; i < roomFiles.size(); i++)
+	{
+		Files::CopyFileTo(roomFiles.at(i).backupName, roomFiles.at(i).destinationName);
+	}
+
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+
+	return Result;
+}
+
+RValue& DatabaseLoader::GMHooks::EnterRun(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	auto original_function = reinterpret_cast<decltype(&EnterRun)>(MmGetHookTrampoline(g_ArSelfModule, "EnterRun"));
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+
+	GMWrappers::CallGameScript("gml_Script_load_room_files", {});
+
+	return Result;
+}
+
 void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 {
 	vector<string> AllNames;
@@ -246,7 +305,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 	AllNames.push_back("gml_Object_obj_player_Draw_0");
 
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
-
+	
 	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
 	{
 		CInstance* GlobalInstance;

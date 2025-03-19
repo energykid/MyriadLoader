@@ -10,6 +10,7 @@ namespace DatabaseLoader
 {
 	inline int behaviorCount = 0;
 	inline int currentState = 0;
+	inline bool loadingMods = true;
 	class ModuleMain
 	{
 	};
