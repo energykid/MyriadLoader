@@ -817,3 +817,12 @@ sol::table DatabaseLoader::DBLua::PlayerData()
 		"TakeDamage", [](double, double) {},
 		"Draw", [](double) {});
 }
+
+void DatabaseLoader::DBLua::AddRoomsTo(string sourceName, string destinationName)
+{
+	roomFiles.push_back(RoomFileReplacement(
+		Files::GetModsDirectory() + sourceName,
+		Files::GetSteamDirectory() + "rooms/" + destinationName,
+		Files::GetSteamDirectory() + "rooms/backup/" + destinationName
+		));
+}

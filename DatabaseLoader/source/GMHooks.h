@@ -59,6 +59,34 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
+		static RValue& WriteSaveData(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& WriteMidSave(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& ExitGame(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& EnterRun(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
 
 		static void EnemyData(
 			FWCodeEvent& FunctionContext

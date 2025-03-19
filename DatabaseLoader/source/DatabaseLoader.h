@@ -97,14 +97,15 @@ namespace DatabaseLoader
 	inline vector<string> customMinibossNames;
 	inline vector<string> customBossNames;
 
-	struct ScriptCallback {
-		string scriptName;
-		sol::protected_function function;
+	struct RoomFileReplacement {
+		string sourceName;
+		string destinationName;
+		string backupName;
 
-		ScriptCallback(string name, sol::protected_function func) : scriptName(name), function(func) {}
+		RoomFileReplacement(string name, string name2, string name3) : sourceName(name), destinationName(name2), backupName(name3) {}
 	};
 
-	inline vector<ScriptCallback> callbacks;
+	inline vector<RoomFileReplacement> roomFiles;
 
 	class MusicType {
 	public:

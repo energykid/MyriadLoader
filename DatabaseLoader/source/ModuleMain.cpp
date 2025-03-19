@@ -60,12 +60,12 @@ static void RegisterData(sol::table data)
 	{
 		if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
 		{
+			int id = Files::HashString(getName);
+
 			if (data.get<bool>("Miniboss") == true)
 			{
 				if (std::find(customMinibossNames.begin(), customMinibossNames.end(), getName) == customMinibossNames.end())
 				{
-					int id = Files::HashString(getName);
-
 					g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), id, id });
 					customMinibossNames.push_back(getName);
 					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created miniboss '" + getName + "' with numeric ID: " + to_string(id));
@@ -73,8 +73,6 @@ static void RegisterData(sol::table data)
 			}
 			else if (std::find(customEnemyNames.begin(), customEnemyNames.end(), getName) == customEnemyNames.end())
 			{
-				int id = Files::HashString(getName);
-
 				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), id, id });
 				customEnemyNames.push_back(getName);
 				g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created enemy '" + getName + "' with numeric ID: " + to_string(id));
@@ -98,6 +96,11 @@ void UnloadMods()
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
 	}
 
+	for (size_t i = 0; i < roomFiles.size(); i++)
+	{
+		Files::CopyFileTo(roomFiles.at(i).backupName, roomFiles.at(i).destinationName);
+	}
+
 	modState.clear();
 }
 
@@ -116,13 +119,13 @@ void ObjectBehaviorRun(FWFrame& context)
 	
 	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
-		modState.at(stateNum)["hard_mode"] = GMWrappers::GetGlobal("hardmode");
-		modState.at(stateNum)["paused"] = g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_pause"})});
+		modState.at(stateNum)["hard_mode"] = GMWrappers::GetGlobal("hardmode").ToBoolean();
+		modState.at(stateNum)["paused"] = g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_pause"})}).ToBoolean();
 		modState.at(stateNum)["loop"] = GMWrappers::CallGameScript("get_loop", {-4});
 		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
-		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
+		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + 100;
 		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
-		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_y") + (464 / 2);
+		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_y") + 100;
 
 		RValue playerAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_player" });
 		RValue player = g_YYTKInterface->CallBuiltin("instance_find", { playerAsset, 0 });
@@ -142,7 +145,7 @@ void ObjectBehaviorRun(FWFrame& context)
 				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
 				if (modState.at(stateNum)["all_behaviors"][var])
 				{
-					if (g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)tbl.get<string>("Name") }) }))
+					if (g_YYTKInterface->CallBuiltin("object_exists", {g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)tbl.get<string>("Name")})}))
 					{
 						if (tbl.get<string>("DataType") == "enemy" || tbl.get<string>("DataType") == "projectile")
 						{
@@ -168,6 +171,35 @@ void ObjectBehaviorRun(FWFrame& context)
 	}
 };
 
+double degreesToRadians(double degrees) {
+	return degrees * 3.14159265358979323846 / 180.0;
+}
+
+void DrawLoadingScreen(FWCodeEvent& context)
+{
+	CCode* Code = std::get<2>(context.Arguments());
+
+	if ((string)Code->GetName() == "gml_Object_obj_screen_Draw_64" && loadingMods)
+	{
+		static double rotation = 0;
+		static double dist = 0;
+		static double frame = 0;
+		CInstance* Self = std::get<0>(context.Arguments());
+		RValue Instance = Self->ToRValue();
+
+		frame += 0.2;
+		rotation += sin(frame / 10) * 0.5;
+		dist = lerp(dist, 15, 0.3);
+		for (size_t i = 0; i < 6; i++)
+		{
+			double x = 120;
+			g_YYTKInterface->CallBuiltin("draw_sprite", { g_YYTKInterface->CallBuiltin("asset_get_index", {"spr_myriad"}), frame + i, x + (cos(rotation + degreesToRadians(i * 60)) * dist), 40 + (-sin(rotation + degreesToRadians(i * 60)) * dist)});
+			g_YYTKInterface->CallBuiltin("draw_set_font", { GMWrappers::GetGlobal("font_nes") });
+			g_YYTKInterface->CallBuiltin("draw_set_halign", { 1 });
+			g_YYTKInterface->CallBuiltin("draw_text", { x, 60, "loading mods..." });
+		}
+	}
+}
 
 RValue ObjectToRValue(sol::object obj)
 {
@@ -295,6 +327,8 @@ sol::state GetModState()
 
 	inState["get_direction"] = DBLua::DirectionTo;
 
+	inState["add_rooms_to"] = DBLua::AddRoomsTo;
+
 	return inState;
 }
 
@@ -302,8 +336,8 @@ int LoadFileRequire(lua_State* L)
 {
 	std::string path = sol::stack::get<std::string>(L);
 
-	std::string script = Files::GetFileContents(Files::GetModsDirectory() + "/" + path + ".lua");
-	std::string script2 = Files::GetFileContents(Files::GetModsDirectory() + "/" + path);
+	std::string script = Files::GetFileContents(Files::GetModsDirectory() + path + ".lua");
+	std::string script2 = Files::GetFileContents(Files::GetModsDirectory() + path);
 
 	if (script != "")
 	{
@@ -323,6 +357,21 @@ int LoadFileRequire(lua_State* L)
 	return 1;
 }
 
+HWINEVENTHOOK closeWindowHook;
+
+void HandleWindowEvent(DWORD event, HWND hwnd) {
+	if (event == EVENT_OBJECT_DESTROY) {
+		UnloadMods();
+	}
+}
+
+void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+	if (idObject == OBJID_WINDOW) {
+		HandleWindowEvent(event, hwnd);
+	}
+}
+
+
 EXPORTED AurieStatus ModuleInitialize(
 	IN AurieModule* Module,
 	IN const fs::path& ModulePath
@@ -341,8 +390,18 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	DatabaseLoader::g_YYTKInterface = yytk_interface;
 
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_OBJECT_CALL,
+		DrawLoadingScreen,
+		0);
+
 	if (!AurieSuccess(last_status))
 		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
+
+	loadingMods = true;
+
+	g_YYTKInterface->CallBuiltin("instance_deactivate_object", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_intro"})});
 
 	dl_lua = GetModState();
 	
@@ -350,9 +409,12 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	string dir = Files::GetModsDirectory();
 	string savedir = Files::GetModSavesDirectory();
+	string rooms = Files::GetSteamDirectory() + "rooms/";
+	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
 
 	Files::MakeDirectory(dir);
 	Files::MakeDirectory(savedir);
+	Files::MakeDirectory(roomsBackup);
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
 
@@ -375,6 +437,12 @@ EXPORTED AurieStatus ModuleInitialize(
 		}
 
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
+	}
+
+	for (size_t i = 0; i < roomFiles.size(); i++)
+	{
+		Files::CopyFileTo(roomFiles.at(i).destinationName, roomFiles.at(i).backupName);
+		Files::AddRoomsToFile(roomFiles.at(i).sourceName, roomFiles.at(i).destinationName);
 	}
 
 	yytk_interface->CreateCallback(
@@ -408,6 +476,7 @@ EXPORTED AurieStatus ModuleInitialize(
 		&original_function
 	);
 
+	/*
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_music_do",
 		reinterpret_cast<PVOID*>(&script_data)
@@ -442,7 +511,7 @@ EXPORTED AurieStatus ModuleInitialize(
 		script_data->m_Functions->m_ScriptFunction,
 		GMHooks::MusicDoLoopFromStart,
 		&original_function
-	);
+	);*/
 
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_enemy_damage",
@@ -467,6 +536,13 @@ EXPORTED AurieStatus ModuleInitialize(
 		GMHooks::PlayerTakeHit,
 		&original_function
 	);
+	
+	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
+
+	for (size_t i = size; i <= 5300; i++)
+	{
+		g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), i, i });
+	}
 
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_instance_create",
@@ -479,6 +555,59 @@ EXPORTED AurieStatus ModuleInitialize(
 		GMHooks::SpawnRoomObject,
 		&original_function
 	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_write_savedata",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"WriteSaveData",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::WriteSaveData,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_write_midsave",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"WriteMidSave",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::WriteMidSave,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_GlobalScript_button_exit_out",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"ExitGame",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::ExitGame,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_button_start",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"EnterRun",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::EnterRun,
+		&original_function
+	);
+
+	GMWrappers::CallGameScript("gml_Script____struct___1_load_room_files_gml_GlobalScript_load_room_files", {});
+
+	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
+	loadingMods = false;
 
 	return AURIE_SUCCESS;
 }
