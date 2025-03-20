@@ -96,12 +96,15 @@ void UnloadMods()
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
 	}
 
+	modState.clear();
+}
+
+void UnloadRoomFiles()
+{
 	for (size_t i = 0; i < roomFiles.size(); i++)
 	{
 		Files::CopyFileTo(roomFiles.at(i).backupName, roomFiles.at(i).destinationName);
 	}
-
-	modState.clear();
 }
 
 void ObjectBehaviorRun(FWFrame& context)
@@ -188,7 +191,7 @@ void DrawLoadingScreen(FWCodeEvent& context)
 		RValue Instance = Self->ToRValue();
 
 		frame += 0.2;
-		rotation += sin(frame / 10) * 0.5;
+		rotation += sin(frame / 10) * 0.06;
 		dist = lerp(dist, 15, 0.3);
 		for (size_t i = 0; i < 6; i++)
 		{
@@ -288,7 +291,7 @@ sol::state GetModState()
 
 	inState["custom_sound"] = DBLua::GetCustomSound;
 
-	inState["custom_music"] = DBLua::GetCustomMusic;
+	//inState["custom_music"] = DBLua::GetCustomMusic;
 
 	//inState["unlock_song"] = DBLua::UnlockSong;
 
@@ -328,6 +331,8 @@ sol::state GetModState()
 	inState["get_direction"] = DBLua::DirectionTo;
 
 	inState["add_rooms_to"] = DBLua::AddRoomsTo;
+
+	//inState["add_bestiary_entry"] = DBLua::AddBestiaryEntry;
 
 	return inState;
 }
@@ -371,6 +376,31 @@ void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, 
 	}
 }
 
+BOOL(*g_WriteFileTrampoline)(
+	IN HANDLE,
+	IN LPCVOID,
+	IN DWORD,
+	OPTIONAL OUT LPDWORD,
+	IN OUT OPTIONAL LPOVERLAPPED
+	) = nullptr;
+
+BOOL WINAPI WriteFileHook(
+	IN HANDLE File,
+	IN LPCVOID Buffer,
+	IN DWORD NumberOfBytesToWrite,
+	OPTIONAL OUT LPDWORD NumberOfBytesWritten,
+	IN OUT OPTIONAL LPOVERLAPPED OverlapInformation
+)
+{
+	if (File == GetStdHandle(STD_OUTPUT_HANDLE) ||
+		File == GetStdHandle(STD_ERROR_HANDLE))
+	{
+		SetLastError(ERROR_FILE_NOT_FOUND);
+		return false;
+	}
+
+	return g_WriteFileTrampoline(File, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten, OverlapInformation);
+}
 
 EXPORTED AurieStatus ModuleInitialize(
 	IN AurieModule* Module,
@@ -464,6 +494,7 @@ EXPORTED AurieStatus ModuleInitialize(
 	TRoutine game_function = nullptr;
 	TRoutine original_builtin_function = nullptr;
 
+	/*
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_music_jukebox_get_songs",
 		reinterpret_cast<PVOID*>(&script_data)
@@ -476,7 +507,6 @@ EXPORTED AurieStatus ModuleInitialize(
 		&original_function
 	);
 
-	/*
 	g_YYTKInterface->GetNamedRoutinePointer(
 		"gml_Script_music_do",
 		reinterpret_cast<PVOID*>(&script_data)
@@ -604,10 +634,20 @@ EXPORTED AurieStatus ModuleInitialize(
 		&original_function
 	);
 
-	GMWrappers::CallGameScript("gml_Script____struct___1_load_room_files_gml_GlobalScript_load_room_files", {});
+	GMWrappers::CallGameScript("gml_Script_load_room_files", {});
 
 	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
 	loadingMods = false;
+
+	UnloadRoomFiles();
+
+	MmCreateHook(
+		Module,
+		"QL_WriteFile",
+		WriteFile,
+		WriteFileHook,
+		reinterpret_cast<PVOID*>(&g_WriteFileTrampoline)
+	);
 
 	return AURIE_SUCCESS;
 }

@@ -32,24 +32,26 @@ RValue& DatabaseLoader::GMHooks::JukeboxInjection(
 
 RValue& DatabaseLoader::GMHooks::MusicDo(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
 {
-	auto original_function = reinterpret_cast<decltype(&JukeboxInjection)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDo"));
+	auto original_function = reinterpret_cast<decltype(&MusicDo)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDo"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
 	RValue snd = *Arguments[0];
-	RValue Sound = g_YYTKInterface->CallBuiltin("audio_play_sound", { snd, 0, false });
-	GMWrappers::SetGlobal("current_music", Sound);
-	g_YYTKInterface->CallBuiltin("audio_sound_pitch", { GMWrappers::GetGlobal("current_music"), 1 });
-	GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { snd }));
-	GMWrappers::SetGlobal("loop_length", 0); // todo: add custom loop length to music
-
-	Result = Sound;
+	if (snd.ToDouble() > 267)
+	{
+		RValue Sound = g_YYTKInterface->CallBuiltin("audio_play_sound", { snd, 0, false });
+		GMWrappers::SetGlobal("current_music", Sound);
+		g_YYTKInterface->CallBuiltin("audio_sound_pitch", { GMWrappers::GetGlobal("current_music"), 1 });
+		GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { snd }));
+		GMWrappers::SetGlobal("loop_length", 0); // todo: add custom loop length to music
+		Result = Sound;
+	}
 
 	return Result;
 }
 
 RValue& DatabaseLoader::GMHooks::MusicDoLoop(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
 {
-	auto original_function = reinterpret_cast<decltype(&JukeboxInjection)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoop"));
+	auto original_function = reinterpret_cast<decltype(&MusicDoLoop)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoop"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
 	return Result;
@@ -57,7 +59,7 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoop(IN CInstance* Self, IN CInstance* O
 
 RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
 {
-	auto original_function = reinterpret_cast<decltype(&JukeboxInjection)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoopFromStart"));
+	auto original_function = reinterpret_cast<decltype(&MusicDoLoopFromStart)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoopFromStart"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
 	RValue snd = *Arguments[0];
@@ -232,6 +234,8 @@ RValue& DatabaseLoader::GMHooks::WriteSaveData(IN CInstance* Self, IN CInstance*
 {
 	g_YYTKInterface->CallBuiltin("array_resize", { GMWrappers::GetGlobal("gen_list"), 289 });
 
+	RValue originalMusUnlock = GMWrappers::GetGlobal("mus_unlock");
+
 	auto original_function = reinterpret_cast<decltype(&WriteSaveData)>(MmGetHookTrampoline(g_ArSelfModule, "WriteSaveData"));
 
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
@@ -266,12 +270,6 @@ RValue& DatabaseLoader::GMHooks::WriteMidSave(IN CInstance* Self, IN CInstance* 
 RValue& DatabaseLoader::GMHooks::ExitGame(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
 {
 	auto original_function = reinterpret_cast<decltype(&ExitGame)>(MmGetHookTrampoline(g_ArSelfModule, "ExitGame"));
-
-	for (size_t i = 0; i < roomFiles.size(); i++)
-	{
-		Files::CopyFileTo(roomFiles.at(i).backupName, roomFiles.at(i).destinationName);
-	}
-
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
 	return Result;
@@ -281,8 +279,6 @@ RValue& DatabaseLoader::GMHooks::EnterRun(IN CInstance* Self, IN CInstance* Othe
 {
 	auto original_function = reinterpret_cast<decltype(&EnterRun)>(MmGetHookTrampoline(g_ArSelfModule, "EnterRun"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
-
-	GMWrappers::CallGameScript("gml_Script_load_room_files", {});
 
 	return Result;
 }

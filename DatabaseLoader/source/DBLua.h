@@ -65,6 +65,8 @@ namespace DatabaseLoader
 		static sol::table GlobalData();
 		static sol::table PlayerData();
 
+		static void AddBestiaryEntry(string name, double race, double mugshot, double sprite, double hp, double score);
+
 		static void AddRoomsTo(string sourceName, string destinationName);
 
 		static RValue CallBuiltinLua(
