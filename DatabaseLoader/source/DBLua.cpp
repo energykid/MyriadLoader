@@ -455,6 +455,7 @@ double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
+	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_unlock"), 0 });
 
 	//Files::CopyFileTo(Files::GetModsDirectory() + path, Files::GetSteamDirectory());
 
@@ -816,6 +817,11 @@ sol::table DatabaseLoader::DBLua::PlayerData()
 		"Step", [](double) {},
 		"TakeDamage", [](double, double) {},
 		"Draw", [](double) {});
+}
+
+void DatabaseLoader::DBLua::AddBestiaryEntry(string name, double race, double mugshot, double sprite, double hp, double score)
+{
+	int id = Files::HashString(name);
 }
 
 void DatabaseLoader::DBLua::AddRoomsTo(string sourceName, string destinationName)
