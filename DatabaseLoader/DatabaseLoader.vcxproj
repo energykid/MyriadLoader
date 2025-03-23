@@ -76,7 +76,7 @@
     <IncludePath>$(ProjectDir)include;F:\includes\lua54\include;F:\includes\sol3\include;</IncludePath>
     <LibraryPath>;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
-    <TargetName>MyriadLoader</TargetName>
+    <TargetName>Myriad</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
@@ -88,7 +88,7 @@
     <IncludePath>$(ProjectDir)include;F:\includes\lua54\include;F:\includes\sol3\include;</IncludePath>
     <LibraryPath>;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
     <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
-    <TargetName>MyriadLoader</TargetName>
+    <TargetName>Myriad</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>F:\All Downloads\DatabaseLoader</OutDir>

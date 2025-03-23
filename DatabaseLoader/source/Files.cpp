@@ -83,7 +83,7 @@ std::string DatabaseLoader::Files::GetFileContents(const std::string& filePath)
 int DatabaseLoader::Files::HashString(string name)
 {
     std::hash<std::string> hash_fn;
-    return 300 + (hash_fn(name) % 5000);
+    return 5000 + (hash_fn(name) % 10000);
 }
 
 bool DatabaseLoader::Files::CopyFileTo(const std::string& sourcePath, const std::string& destinationPath) {

@@ -437,7 +437,7 @@ double DatabaseLoader::DBLua::GetCustomSound(string path)
 }
 
 /***
-Register a custom music piece from the provided file path, then add it to the jukebox.
+Register a custom music piece from the provided file path.
 @function custom_music
 @param path the path (starting at DatabaseLoader/Mods/) to get the sound from
 @param musicName the name this music piece will have at the jukebox
@@ -455,7 +455,6 @@ double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
-	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_unlock"), 0 });
 
 	//Files::CopyFileTo(Files::GetModsDirectory() + path, Files::GetSteamDirectory());
 
@@ -517,6 +516,24 @@ Plays a sound at the given X position.
 void DatabaseLoader::DBLua::DoSoundExt(double soundType, double pitch, double gain, double x)
 {
 	GMWrappers::CallGameScript("gml_Script_sound_do_ext", { soundType, pitch, gain, x });
+}
+
+void DatabaseLoader::DBLua::DoMusic(double soundType)
+{
+	GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+
+	RValue rval = g_YYTKInterface->CallBuiltin("audio_play_sound", { soundType, 0, true });
+	g_YYTKInterface->CallBuiltin("audio_sound_gain", { rval, GMWrappers::GetGlobal("volume_music"), 0 });
+	GMWrappers::SetGlobal("current_music", rval);
+	GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { GMWrappers::GetGlobal("current_music") }));
+}
+
+void DatabaseLoader::DBLua::ShowBossMessage(double x, double y, string str)
+{
+	RValue msg = g_YYTKInterface->CallGameScript("gml_Script_instance_create", { x, y, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bossMessage"})});
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { msg, "boss_message", (string_view)str });
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { msg, "drawx", x });
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { msg, "drawy", y });
 }
 
 /***
@@ -628,6 +645,40 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 
 	return part.ToDouble();
 }
+double DatabaseLoader::DBLua::SpawnBossIntro(double x, double y, string name)
+{
+	RValue enemyAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)name });
+	RValue enemyExists = g_YYTKInterface->CallBuiltin("object_exists", { enemyAsset });
+
+	//GMWrappers::CallGameScript("gml_Script_boss_locks", {});
+	GMWrappers::SetGlobal("boss_mode", 1);
+
+	if (!enemyExists)
+	{
+		RValue intro = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
+			g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_boss_intro_template" }) });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)name });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "behavior", "myr_custom" });
+		GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+
+		return intro.ToDouble();
+	}
+
+	return 0.0;
+}
+
+void DatabaseLoader::DBLua::KillBoss()
+{
+	RValue result;
+
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_screen"}), "fade_shift", -1.5 });
+	GMWrappers::CallGameScript("gml_Script_shake", { 50 });
+}
+
+void DatabaseLoader::DBLua::AddScreenshake(double amount)
+{
+	GMWrappers::CallGameScript("gml_Script_shake", { amount });
+}
 
 double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 {
@@ -645,6 +696,7 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 		// The object name (between swarmers for regular enemies, and the templates for the other two types of enemies)
 		string ObjectToSpawn = "obj_swarmer";
 		if (std::find(customMinibossNames.begin(), customMinibossNames.end(), name) != customMinibossNames.end()) ObjectToSpawn = "obj_miniboss_template";
+		if (std::find(customBossNames.begin(), customBossNames.end(), name) != customBossNames.end()) ObjectToSpawn = "obj_boss_template";
 
 		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
 			g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)ObjectToSpawn }) });
@@ -652,6 +704,8 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
 		if (ObjectToSpawn == "obj_miniboss_template")
 			g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "damage_source_id", 61 });
+		if (ObjectToSpawn == "obj_boss_template")
+			g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "hp_damage", g_YYTKInterface->CallBuiltin("variable_instance_get", {enemy, "hp"})});
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
@@ -687,17 +741,43 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 	return 0.0;
 }
 
-double DatabaseLoader::DBLua::SpawnProjectile(double x, double y, double xvel, double yvel, double sprite)
+double DatabaseLoader::DBLua::SpawnProjectile(double x, double y, double xvel, double yvel, sol::object b)
 {
-	RValue proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bullet_type"})});
+	RValue proj;
+	double id;
+	string bb;
 
-	double id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
+	switch (b.get_type())
+	{
+	case sol::lua_type_of_v<string>:
+		
+		bb = b.as<string>();
 
-	SetDouble(id, "hspeed", xvel);
-	SetDouble(id, "vspeed", yvel);
-	SetDouble(id, "sprite_index", sprite);
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)bb}) }))
+			bb = "obj_enemy_bullet_1";
 
-	return proj.ToDouble();
+		proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)bb})});
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
+
+		SetDouble(id, "hspeed", xvel);
+		SetDouble(id, "vspeed", yvel);
+		return proj.ToDouble();
+
+	case sol::lua_type_of_v<double>:
+
+		proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bullet_type"}) });
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
+
+		SetDouble(id, "hspeed", xvel);
+		SetDouble(id, "vspeed", yvel);
+		SetDouble(id, "sprite_index", b.as<double>());
+		return proj.ToDouble();
+
+	default:
+		return 0;
+	}
 }
 
 void DatabaseLoader::DBLua::AddCallbackTo(double id, sol::protected_function function)
@@ -713,6 +793,8 @@ Sets the depth for draw functions.
 */
 void DatabaseLoader::DBLua::DrawSetDepth(double dep)
 {
+	g_YYTKInterface->CallBuiltin("gpu_set_zwriteenable", { true });
+	g_YYTKInterface->CallBuiltin("gpu_set_ztestenable", { true });
 	g_YYTKInterface->CallBuiltin("gpu_set_depth", { dep });
 }
 
@@ -766,6 +848,32 @@ void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, d
 	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
 }
 
+void DatabaseLoader::DBLua::DrawPrimitiveBeginTexture(double spriteID, double frame)
+{
+	RValue tex = g_YYTKInterface->CallBuiltin("sprite_get_texture", { spriteID, frame });
+	g_YYTKInterface->CallBuiltin("draw_primitive_begin_texture", { 5, tex });
+}
+
+void DatabaseLoader::DBLua::DrawPrimitiveBeginSolid()
+{
+	g_YYTKInterface->CallBuiltin("draw_primitive_begin", { 5 });
+}
+
+void DatabaseLoader::DBLua::DrawVertexColor(double x, double y, double color, double alpha)
+{
+	g_YYTKInterface->CallBuiltin("draw_vertex_colour", { x, y, color, alpha });
+}
+
+void DatabaseLoader::DBLua::DrawVertexTexture(double x, double y, double texcoordx, double texcoordy)
+{
+	g_YYTKInterface->CallBuiltin("draw_vertex_texture", { x, y, texcoordx, texcoordy });
+}
+
+void DatabaseLoader::DBLua::DrawVertexEnd()
+{
+	g_YYTKInterface->CallBuiltin("draw_primitive_end", {});
+}
+
 sol::table DatabaseLoader::DBLua::DirectionTo(double x1, double y1, double x2, double y2)
 {
 	RValue dir = g_YYTKInterface->CallBuiltin("point_direction", {x1, y1, x2, y2});
@@ -783,6 +891,10 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 		"Name", name,
 		"Miniboss", false,
 		"Boss", false,
+		"BossFloor", 0,
+		"ShouldForceBoss", [](double) {return false; },
+		"BossIntro", [](double) {},
+		"BossBackground", [](double) {},
 		"Create", [](double) {},
 		"Step", [](double) {},
 		"Destroy", [](double) {},
@@ -806,6 +918,7 @@ sol::table DatabaseLoader::DBLua::GlobalData()
 	return modState[currentState].create_table_with(
 		"DataType", "global",
 		"Step", []() {},
+		"OverrideBoss", []() { return ""; },
 		"Draw", []() {},
 		"DrawUI", []() {});
 }

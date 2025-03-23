@@ -13,6 +13,7 @@
 #include <iostream>
 #include "SaverLoader.h"
 #include <fstream>
+#include <thread>
 
 #pragma comment(lib, "lua54.lib")
 
@@ -62,7 +63,27 @@ static void RegisterData(sol::table data)
 		{
 			int id = Files::HashString(getName);
 
-			if (data.get<bool>("Miniboss") == true)
+			if (data.get<bool>("Boss") == true)
+			{
+				if (std::find(customBossNames.begin(), customBossNames.end(), getName) == customBossNames.end())
+				{
+					g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), id, id });
+					customBossNames.push_back(getName);
+
+					string bosslist = "bosslist_" + to_string(data.get<int>("BossFloor"));
+
+					if (g_YYTKInterface->CallBuiltin("variable_global_exists", { (string_view)bosslist }))
+					{
+						g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal(bosslist), id });
+						g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Boss '" + getName + "' (numeric ID " + to_string(id) + ") implemented for floor " + to_string(data.get<int>("BossFloor")));
+					}
+					else
+					{
+						g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created boss '" + getName + "' with numeric ID: " + to_string(id) + " using custom spawning logic");
+					}
+				}
+			}
+			else if (data.get<bool>("Miniboss") == true)
 			{
 				if (std::find(customMinibossNames.begin(), customMinibossNames.end(), getName) == customMinibossNames.end())
 				{
@@ -81,7 +102,7 @@ static void RegisterData(sol::table data)
 	}
 }
 
-void UnloadMods()
+void DatabaseLoader::UnloadMods()
 {
 	string dir = Files::GetModsDirectory();
 
@@ -93,10 +114,148 @@ void UnloadMods()
 
 		modState[currentState]["mod_unload"].call();
 
+		//lua_close(modState[currentState]);
+
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
 	}
 
+	customEnemyNames.clear();
+	customMinibossNames.clear();
+	customBossNames.clear();
 	modState.clear();
+}
+
+sol::state DatabaseLoader::GetModState()
+{
+	sol::state inState;
+
+	inState.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::string);
+
+	inState["modName"] = "";
+
+	inState["debug_out"] = [](string text) {
+		yytk_interface->PrintInfo(text);
+		};
+
+	inState["object_behaviors"] = inState.create_table();
+
+	inState["hard_mode"] = false;
+	inState["paused"] = false;
+	inState["loop"] = 0;
+	inState["view_x"] = 0;
+	inState["view_y"] = 0;
+	inState["player"] = 0;
+	inState["player_x"] = 0;
+	inState["player_y"] = 0;
+	inState["screen_center_x"] = 0;
+	inState["screen_center_y"] = 0;
+
+	inState["enemy_data"] = DBLua::EnemyData;
+	inState["projectile_data"] = DBLua::ProjectileData;
+	inState["global_data"] = DBLua::GlobalData;
+	inState["player_data"] = DBLua::PlayerData;
+
+	inState["register_data"] = RegisterData;
+
+	inState["spawn_particle"] = DBLua::SpawnParticle;
+
+	inState["init_var"] = DBLua::InitVar;
+
+	inState["set_var"] = DBLua::SetVar;
+
+	inState["get_var"] = DBLua::GetVar;
+
+	inState["init_global"] = DBLua::InitGlobal;
+
+	inState["set_global"] = DBLua::SetGlobal;
+
+	inState["get_global"] = DBLua::GetGlobal;
+
+	inState["init_number"] = DBLua::InitVar;
+
+	inState["init_bool"] = DBLua::InitVar;
+
+	inState["init_string"] = DBLua::InitVar;
+
+	inState["set_number"] = DBLua::SetVar;
+
+	inState["set_bool"] = DBLua::SetVar;
+
+	inState["set_string"] = DBLua::SetVar;
+
+	inState["get_number"] = DBLua::GetVar;
+
+	inState["get_bool"] = DBLua::GetVar;
+
+	inState["get_string"] = DBLua::GetVar;
+
+	inState["custom_sprite"] = DBLua::GetCustomSprite;
+
+	inState["custom_sound"] = DBLua::GetCustomSound;
+
+	inState["custom_music"] = DBLua::GetCustomMusic;
+
+	//inState["unlock_song"] = DBLua::UnlockSong;
+
+	inState["get_asset"] = DBLua::GetAsset;
+
+	inState["call_function"] = DBLua::CallFunction;
+
+	inState["call_game_function"] = DBLua::CallGameFunction;
+
+	inState["play_sound"] = DBLua::DoSound;
+
+	inState["play_sound_ext"] = DBLua::DoSoundExt;
+
+	inState["play_music"] = DBLua::DoMusic;
+
+	inState["boss_message"] = DBLua::ShowBossMessage;
+
+	inState["draw_sprite"] = DBLua::DrawSprite;
+
+	inState["draw_sprite_ext"] = DBLua::DrawSpriteExt;
+
+	inState["draw_primitive_begin_texture"] = DBLua::DrawPrimitiveBeginTexture;
+	inState["draw_vertex_texture"] = DBLua::DrawVertexTexture;
+	inState["draw_primitive_begin"] = DBLua::DrawPrimitiveBeginSolid;
+	inState["draw_vertex_color"] = DBLua::DrawVertexColor;
+	inState["draw_primitive_end"] = DBLua::DrawVertexEnd;
+
+	inState["draw_sprite"] = DBLua::DrawSprite;
+
+	inState["draw_text"] = DBLua::DrawString;
+
+	inState["draw_rectangle"] = DBLua::DrawRect;
+
+	inState["draw_set_depth"] = DBLua::DrawSetDepth;
+
+	inState["save_data"] = SaverLoader::SaveVariable;
+
+	inState["load_data"] = SaverLoader::LoadVariable;
+
+	inState["create_color"] = DBLua::CreateColor;
+	inState["create_colour"] = DBLua::CreateColor;
+
+	inState["draw_set_color"] = DBLua::DrawSetColor;
+	inState["draw_set_colour"] = DBLua::DrawSetColor;
+
+	inState["spawn_enemy"] = DBLua::SpawnEnemy;
+
+	inState["spawn_boss_intro"] = DBLua::SpawnBossIntro;
+
+	inState["kill_boss_effect"] = DBLua::KillBoss;
+
+	inState["add_screenshake"] = DBLua::AddScreenshake;
+
+	inState["spawn_projectile"] = DBLua::SpawnProjectile;
+
+	//inState["get_direction"] = DBLua::DirectionTo;
+
+	inState["add_rooms_to"] = DBLua::AddRoomsTo;
+
+	//inState["add_bestiary_entry"] = DBLua::AddBestiaryEntry;
+
+	return inState;
 }
 
 void UnloadRoomFiles()
@@ -122,13 +281,15 @@ void ObjectBehaviorRun(FWFrame& context)
 	
 	for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
+		g_YYTKInterface->CallBuiltin("audio_sound_gain", { GMWrappers::GetGlobal("current_music"), GMWrappers::GetGlobal("volume_music"), 0 });
+
 		modState.at(stateNum)["hard_mode"] = GMWrappers::GetGlobal("hardmode").ToBoolean();
 		modState.at(stateNum)["paused"] = g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_pause"})}).ToBoolean();
-		modState.at(stateNum)["loop"] = GMWrappers::CallGameScript("get_loop", {-4});
+		modState.at(stateNum)["loop"] = GMWrappers::GetGlobal("game_loop");
 		modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
-		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + 100;
+		modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + 120;
 		modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
-		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_y") + 100;
+		modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_y") + 160;
 
 		RValue playerAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_player" });
 		RValue player = g_YYTKInterface->CallBuiltin("instance_find", { playerAsset, 0 });
@@ -223,121 +384,7 @@ RValue ObjectToRValue(sol::object obj)
 	return 0;
 }
 
-sol::state GetModState()
-{
-	sol::state inState;
-
-	inState.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::string);
-
-	inState["modName"] = "";
-
-	inState["debug_out"] = [](string text) {
-		yytk_interface->PrintInfo(text);
-		};
-
-	inState["object_behaviors"] = inState.create_table();
-
-	inState["hard_mode"] = false;
-	inState["paused"] = false;
-	inState["loop"] = 0;
-	inState["view_x"] = 0;
-	inState["view_y"] = 0;
-	inState["player"] = 0;
-	inState["player_x"] = 0;
-	inState["player_y"] = 0;
-	inState["screen_center_x"] = 0;
-	inState["screen_center_y"] = 0;
-
-	inState["enemy_data"] = DBLua::EnemyData;
-	inState["projectile_data"] = DBLua::ProjectileData;
-	inState["global_data"] = DBLua::GlobalData;
-	inState["player_data"] = DBLua::PlayerData;
-
-	inState["register_data"] = RegisterData;
-
-	inState["spawn_particle"] = DBLua::SpawnParticle;
-
-	inState["init_var"] = DBLua::InitVar;
-
-	inState["set_var"] = DBLua::SetVar;
-
-	inState["get_var"] = DBLua::GetVar;
-
-	inState["init_global"] = DBLua::InitGlobal;
-
-	inState["set_global"] = DBLua::SetGlobal;
-
-	inState["get_global"] = DBLua::GetGlobal;
-
-	inState["init_number"] = DBLua::InitVar;
-
-	inState["init_bool"] = DBLua::InitVar;
-
-	inState["init_string"] = DBLua::InitVar;
-
-	inState["set_number"] = DBLua::SetVar;
-
-	inState["set_bool"] = DBLua::SetVar;
-
-	inState["set_string"] = DBLua::SetVar;
-
-	inState["get_number"] = DBLua::GetVar;
-
-	inState["get_bool"] = DBLua::GetVar;
-
-	inState["get_string"] = DBLua::GetVar;
-
-	inState["custom_sprite"] = DBLua::GetCustomSprite;
-
-	inState["custom_sound"] = DBLua::GetCustomSound;
-
-	//inState["custom_music"] = DBLua::GetCustomMusic;
-
-	//inState["unlock_song"] = DBLua::UnlockSong;
-
-	inState["get_asset"] = DBLua::GetAsset;
-
-	inState["call_function"] = DBLua::CallFunction;
-
-	inState["call_game_function"] = DBLua::CallGameFunction;
-
-	inState["play_sound"] = DBLua::DoSound;
-
-	inState["play_sound_ext"] = DBLua::DoSoundExt;
-
-	inState["draw_sprite"] = DBLua::DrawSprite;
-
-	inState["draw_sprite_ext"] = DBLua::DrawSpriteExt;
-
-	inState["draw_text"] = DBLua::DrawString;
-
-	inState["draw_rectangle"] = DBLua::DrawRect;
-
-	inState["draw_set_depth"] = DBLua::DrawSetDepth;
-
-	inState["save_data"] = SaverLoader::SaveVariable;
-
-	inState["load_data"] = SaverLoader::LoadVariable;
-
-	inState["create_color"] = DBLua::CreateColor;
-	inState["create_colour"] = DBLua::CreateColor;
-
-	inState["draw_set_color"] = DBLua::DrawSetColor;
-	inState["draw_set_colour"] = DBLua::DrawSetColor;
-
-	inState["spawn_enemy"] = DBLua::SpawnEnemy;
-	inState["spawn_projectile"] = DBLua::SpawnProjectile;
-
-	inState["get_direction"] = DBLua::DirectionTo;
-
-	inState["add_rooms_to"] = DBLua::AddRoomsTo;
-
-	//inState["add_bestiary_entry"] = DBLua::AddBestiaryEntry;
-
-	return inState;
-}
-
-int LoadFileRequire(lua_State* L)
+int DatabaseLoader::LoadFileRequire(lua_State* L)
 {
 	std::string path = sol::stack::get<std::string>(L);
 
@@ -402,39 +449,10 @@ BOOL WINAPI WriteFileHook(
 	return g_WriteFileTrampoline(File, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten, OverlapInformation);
 }
 
-EXPORTED AurieStatus ModuleInitialize(
-	IN AurieModule* Module,
-	IN const fs::path& ModulePath
-)
+void LoadMods(AurieModule* Module)
 {
-	g_LocalModule = Module;
-
-	UNREFERENCED_PARAMETER(ModulePath);
-
-	AurieStatus last_status = AURIE_SUCCESS;
-
-	last_status = ObGetInterface(
-		"YYTK_Main",
-		reinterpret_cast<AurieInterfaceBase*&>(yytk_interface)
-	);
-
-	DatabaseLoader::g_YYTKInterface = yytk_interface;
-
-	yytk_interface->CreateCallback(
-		Module,
-		YYTK::EVENT_OBJECT_CALL,
-		DrawLoadingScreen,
-		0);
-
-	if (!AurieSuccess(last_status))
-		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
-
-	loadingMods = true;
-
-	g_YYTKInterface->CallBuiltin("instance_deactivate_object", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_intro"})});
-
 	dl_lua = GetModState();
-	
+
 	dl_lua["all_behaviors"] = dl_lua.create_table();
 
 	string dir = Files::GetModsDirectory();
@@ -442,9 +460,12 @@ EXPORTED AurieStatus ModuleInitialize(
 	string rooms = Files::GetSteamDirectory() + "rooms/";
 	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
 
-	Files::MakeDirectory(dir);
-	Files::MakeDirectory(savedir);
-	Files::MakeDirectory(roomsBackup);
+	if (firstLoad)
+	{
+		Files::MakeDirectory(dir);
+		Files::MakeDirectory(savedir);
+		Files::MakeDirectory(roomsBackup);
+	}
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
 
@@ -475,17 +496,20 @@ EXPORTED AurieStatus ModuleInitialize(
 		Files::AddRoomsToFile(roomFiles.at(i).sourceName, roomFiles.at(i).destinationName);
 	}
 
-	yytk_interface->CreateCallback(
-		Module,
-		YYTK::EVENT_OBJECT_CALL,
-		GMHooks::EnemyData,
-		0);
+	if (firstLoad)
+	{
+		yytk_interface->CreateCallback(
+			Module,
+			YYTK::EVENT_OBJECT_CALL,
+			GMHooks::EnemyData,
+			0);
 
-	yytk_interface->CreateCallback(
-		Module,
-		YYTK::EVENT_FRAME,
-		ObjectBehaviorRun,
-		0);
+		yytk_interface->CreateCallback(
+			Module,
+			YYTK::EVENT_FRAME,
+			ObjectBehaviorRun,
+			0);
+	}
 
 	CScript* script_data = nullptr;
 	int script_index = 0;
@@ -494,160 +518,230 @@ EXPORTED AurieStatus ModuleInitialize(
 	TRoutine game_function = nullptr;
 	TRoutine original_builtin_function = nullptr;
 
-	/*
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_music_jukebox_get_songs",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"Jukebox Injection",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::JukeboxInjection,
-		&original_function
-	);
+	if (firstLoad)
+	{
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_music_jukebox_get_songs",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"Jukebox Injection",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::JukeboxInjection,
+			&original_function
+		);
 
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_music_do",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"MusicDo",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::MusicDo,
-		&original_function
-	);
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_music_do",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"MusicDo",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::MusicDo,
+			&original_function
+		);
 
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_music_do_loop",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"MusicDoLoop",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::MusicDoLoop,
-		&original_function
-	);
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_music_do_loop",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"MusicDoLoop",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::MusicDoLoop,
+			&original_function
+		);
 
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_music_do_loop_from_start",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"MusicDoLoopFromStart",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::MusicDoLoopFromStart,
-		&original_function
-	);*/
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_anon_gml_Object_obj_boss_setter_Create_0_29_gml_Object_obj_boss_setter_Create_0",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"MusicDoLoop",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::ChooseBossIntro,
+			&original_function
+		);
 
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_enemy_damage",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"EnemyDamage",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::EnemyDamage,
-		&original_function
-	);
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_music_do_loop_from_start",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"MusicDoLoopFromStart",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::MusicDoLoopFromStart,
+			&original_function
+		);
 
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_player_takeHit",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"PlayerTakeHit",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::PlayerTakeHit,
-		&original_function
-	);
-	
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_enemy_damage",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"EnemyDamage",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::EnemyDamage,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_player_takeHit",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"PlayerTakeHit",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::PlayerTakeHit,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_button_exit_to_menu",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"ReloadAllMods",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::ReloadAllMods,
+			&original_function
+		);
+	}
+
 	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
 
-	for (size_t i = size; i <= 5300; i++)
+	for (size_t i = size; i <= 15000; i++)
 	{
 		g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), i, i });
 	}
 
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_instance_create",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"SpawnRoomObject",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::SpawnRoomObject,
-		&original_function
-	);
-
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_write_savedata",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"WriteSaveData",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::WriteSaveData,
-		&original_function
-	);
-
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_write_midsave",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"WriteMidSave",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::WriteMidSave,
-		&original_function
-	);
-
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_GlobalScript_button_exit_out",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"ExitGame",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::ExitGame,
-		&original_function
-	);
-
-	g_YYTKInterface->GetNamedRoutinePointer(
-		"gml_Script_button_start",
-		reinterpret_cast<PVOID*>(&script_data)
-	);
-	MmCreateHook(
-		g_ArSelfModule,
-		"EnterRun",
-		script_data->m_Functions->m_ScriptFunction,
-		GMHooks::EnterRun,
-		&original_function
-	);
-
 	GMWrappers::CallGameScript("gml_Script_load_room_files", {});
 
-	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
-	loadingMods = false;
+	if (firstLoad)
+	{
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_instance_create",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"SpawnRoomObject",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::SpawnRoomObject,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_write_savedata",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"WriteSaveData",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::WriteSaveData,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_write_midsave",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"WriteMidSave",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::WriteMidSave,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_GlobalScript_button_exit_out",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"ExitGame",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::ExitGame,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Script_button_start",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"EnterRun",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::EnterRun,
+			&original_function
+		);
+
+		g_YYTKInterface->GetNamedRoutinePointer(
+			"gml_Object_obj_beacon_Other_25",
+			reinterpret_cast<PVOID*>(&script_data)
+		);
+		MmCreateHook(
+			g_ArSelfModule,
+			"ChooseBossIntro",
+			script_data->m_Functions->m_ScriptFunction,
+			GMHooks::ChooseBossIntro,
+			&original_function
+		);
+	}
 
 	UnloadRoomFiles();
 
-	MmCreateHook(
-		Module,
-		"QL_WriteFile",
-		WriteFile,
-		WriteFileHook,
-		reinterpret_cast<PVOID*>(&g_WriteFileTrampoline)
+	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
+	loadingMods = false;
+	firstLoad = false;
+}
+
+EXPORTED AurieStatus ModuleInitialize(
+	IN AurieModule* Module,
+	IN const fs::path& ModulePath
+)
+{
+	g_LocalModule = Module;
+
+	UNREFERENCED_PARAMETER(ModulePath);
+
+	AurieStatus last_status = AURIE_SUCCESS;
+
+	last_status = ObGetInterface(
+		"YYTK_Main",
+		reinterpret_cast<AurieInterfaceBase*&>(yytk_interface)
 	);
+
+	DatabaseLoader::g_YYTKInterface = yytk_interface;
+
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_OBJECT_CALL,
+		DrawLoadingScreen,
+		0);
+
+	if (!AurieSuccess(last_status))
+		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
+
+	loadingMods = true;
+
+	g_YYTKInterface->CallBuiltin("instance_deactivate_object", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_intro"}) });
+
+	std::thread LoadModsThread(LoadMods, Module);
+
+	LoadModsThread.join();
 
 	return AURIE_SUCCESS;
 }
