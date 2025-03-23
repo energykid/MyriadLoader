@@ -675,6 +675,11 @@ void DatabaseLoader::DBLua::KillBoss()
 	GMWrappers::CallGameScript("gml_Script_shake", { 50 });
 }
 
+void DatabaseLoader::DBLua::ClearBullets(double x, double y)
+{
+	GMWrappers::CallGameScript("gml_Script_clearBullets", { x, y });
+}
+
 void DatabaseLoader::DBLua::AddScreenshake(double amount)
 {
 	GMWrappers::CallGameScript("gml_Script_shake", { amount });
@@ -702,8 +707,7 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 			g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)ObjectToSpawn }) });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "myr_CustomName", (string_view)name });
 		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
-		if (ObjectToSpawn == "obj_miniboss_template")
-			g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "damage_source_id", 61 });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "damage_source_id", 61 });
 		if (ObjectToSpawn == "obj_boss_template")
 			g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "hp_damage", g_YYTKInterface->CallBuiltin("variable_instance_get", {enemy, "hp"})});
 

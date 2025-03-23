@@ -48,6 +48,7 @@ namespace DatabaseLoader
 		static double SpawnEnemy(double x, double y, string name);
 		static double SpawnBossIntro(double x, double y, string name);
 		static void KillBoss();
+		static void ClearBullets(double x, double y);
 		static void AddScreenshake(double amount);
 		static double SpawnProjectile(double x, double y, double xvel, double yvel, sol::object bullet);
 
