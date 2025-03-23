@@ -37,13 +37,19 @@ namespace DatabaseLoader
 		static void DoSound(double soundType, double x);
 		static void DoSoundExt(double soundType, double pitch, double gain, double x);
 
+		static void DoMusic(double soundType);
+		static void ShowBossMessage(double x, double y, string str);
+
 		static double GetAsset(string name);
 		static sol::lua_value CallFunction(string name, sol::table args);
 		static void CallGameFunction(string name, sol::table args);
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
 		static double SpawnEnemy(double x, double y, string name);
-		static double SpawnProjectile(double x, double y, double xvel, double yvel, double sprite);
+		static double SpawnBossIntro(double x, double y, string name);
+		static void KillBoss();
+		static void AddScreenshake(double amount);
+		static double SpawnProjectile(double x, double y, double xvel, double yvel, sol::object bullet);
 
 		static void AddCallbackTo(double id, sol::protected_function function);
 
@@ -57,6 +63,12 @@ namespace DatabaseLoader
 		static void DrawString(double x, double y, string text);
 		static void DrawStringColor(double x, double y, string text, double color);
 		static void DrawSpriteExt(double x, double y, double spriteID, double frameNumber, double rotation, double xScale, double yScale, double color, double alpha);
+
+		static void DrawPrimitiveBeginTexture(double spriteID, double frame);
+		static void DrawPrimitiveBeginSolid();
+		static void DrawVertexColor(double x, double y, double color, double alpha);
+		static void DrawVertexTexture(double x, double y, double texcoordx, double texcoordy);
+		static void DrawVertexEnd();
 
 		static sol::table DirectionTo(double x1, double y1, double x2, double y2);
 

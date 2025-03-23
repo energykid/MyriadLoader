@@ -52,6 +52,13 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
+		static RValue& ReloadAllMods(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
 		static RValue& SpawnRoomObject(
 			IN CInstance* Self,
 			IN CInstance* Other,
@@ -81,6 +88,13 @@ namespace DatabaseLoader
 			IN RValue** Arguments
 		);
 		static RValue& EnterRun(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& ChooseBossIntro(
 			IN CInstance* Self,
 			IN CInstance* Other,
 			OUT RValue& Result,

@@ -22,10 +22,11 @@ RValue& DatabaseLoader::GMHooks::JukeboxInjection(
 	auto original_function = reinterpret_cast<decltype(&JukeboxInjection)>(MmGetHookTrampoline(g_ArSelfModule, "Jukebox Injection"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
+	/*
 	for (int i = 0; i < g_YYTKInterface->CallBuiltin("array_length", { g_YYTKInterface->CallBuiltin("variable_global_get", { "myr_CustomMusicList" }) }).ToDouble(); i++)
 	{
 		g_YYTKInterface->CallBuiltin("array_push", { Result, g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("myr_CustomMusicList"), i })});
-	}
+	}*/
 
 	return Result;
 }
@@ -35,6 +36,7 @@ RValue& DatabaseLoader::GMHooks::MusicDo(IN CInstance* Self, IN CInstance* Other
 	auto original_function = reinterpret_cast<decltype(&MusicDo)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDo"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
+	/*
 	RValue snd = *Arguments[0];
 	if (snd.ToDouble() > 267)
 	{
@@ -44,7 +46,7 @@ RValue& DatabaseLoader::GMHooks::MusicDo(IN CInstance* Self, IN CInstance* Other
 		GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { snd }));
 		GMWrappers::SetGlobal("loop_length", 0); // todo: add custom loop length to music
 		Result = Sound;
-	}
+	}*/
 
 	return Result;
 }
@@ -54,6 +56,9 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoop(IN CInstance* Self, IN CInstance* O
 	auto original_function = reinterpret_cast<decltype(&MusicDoLoop)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoop"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
+	/*
+	GMWrappers::SetGlobal("current_music", Result);
+	*/
 	return Result;
 }
 
@@ -62,6 +67,7 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CIn
 	auto original_function = reinterpret_cast<decltype(&MusicDoLoopFromStart)>(MmGetHookTrampoline(g_ArSelfModule, "MusicDoLoopFromStart"));
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
+	/*
 	RValue snd = *Arguments[0];
 	
 	if (snd.ToDouble() > 267)
@@ -72,7 +78,7 @@ RValue& DatabaseLoader::GMHooks::MusicDoLoopFromStart(IN CInstance* Self, IN CIn
 		GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { snd }));
 		GMWrappers::SetGlobal("loop_length", 0); // todo: add custom loop length to music
 		Result = Sound;
-	}
+	}*/
 
 	return Result;
 }
@@ -202,6 +208,50 @@ RValue& DatabaseLoader::GMHooks::PlayerTakeHit(IN CInstance* Self, IN CInstance*
 	return Result;
 }
 
+RValue& DatabaseLoader::GMHooks::ReloadAllMods(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	auto original_function = reinterpret_cast<decltype(&ReloadAllMods)>(MmGetHookTrampoline(g_ArSelfModule, "ReloadAllMods"));
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+
+	UnloadMods();
+
+	dl_lua = GetModState();
+
+	dl_lua["all_behaviors"] = dl_lua.create_table();
+
+	string dir = Files::GetModsDirectory();
+	string savedir = Files::GetModSavesDirectory();
+	string rooms = Files::GetSteamDirectory() + "rooms/";
+	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
+
+	Files::MakeDirectory(dir);
+	Files::MakeDirectory(savedir);
+	Files::MakeDirectory(roomsBackup);
+
+	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
+
+	for (size_t i = 0; i < mods.size(); i++)
+	{
+		modState.push_back(GetModState());
+
+		currentState = i;
+
+		modState[currentState].clear_package_loaders();
+		modState[currentState].add_package_loader(LoadFileRequire);
+
+		modState[currentState]["all_behaviors"] = modState[currentState].create_table();
+
+		if (std::filesystem::exists(mods[i].string() + "/main.lua"))
+		{
+			modState[currentState].script_file(mods[i].string() + "/main.lua");
+
+			modState[currentState]["mod_load"].call();
+		}
+
+		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
+	}
+}
+
 RValue& DatabaseLoader::GMHooks::SpawnRoomObject(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
 {
 	auto original_function = reinterpret_cast<decltype(&SpawnRoomObject)>(MmGetHookTrampoline(g_ArSelfModule, "SpawnRoomObject"));
@@ -219,6 +269,14 @@ RValue& DatabaseLoader::GMHooks::SpawnRoomObject(IN CInstance* Self, IN CInstanc
 		if (Arguments[2]->ToDouble() == Files::HashString(customMinibossNames[i]))
 		{
 			Result = DBLua::SpawnEnemy(Arguments[0]->ToDouble(), Arguments[1]->ToDouble(), customMinibossNames[i]);
+			enemyFound = true;
+		}
+	}
+	for (size_t i = 0; i < customBossNames.size(); i++)
+	{
+		if (Arguments[2]->ToDouble() == Files::HashString(customBossNames[i]))
+		{
+			Result = DBLua::SpawnBossIntro(Arguments[0]->ToDouble(), Arguments[1]->ToDouble(), customBossNames[i]);
 			enemyFound = true;
 		}
 	}
@@ -242,7 +300,7 @@ RValue& DatabaseLoader::GMHooks::WriteSaveData(IN CInstance* Self, IN CInstance*
 
 	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
 
-	for (size_t i = size; i <= 5300; i++)
+	for (size_t i = size; i <= 15000; i++)
 	{
 		g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), i, i });
 	}
@@ -259,7 +317,7 @@ RValue& DatabaseLoader::GMHooks::WriteMidSave(IN CInstance* Self, IN CInstance* 
 
 	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
 
-	for (size_t i = size; i <= 5300; i++)
+	for (size_t i = size; i <= 15000; i++)
 	{
 		g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), i, i });
 	}
@@ -283,6 +341,55 @@ RValue& DatabaseLoader::GMHooks::EnterRun(IN CInstance* Self, IN CInstance* Othe
 	return Result;
 }
 
+RValue& DatabaseLoader::GMHooks::ChooseBossIntro(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
+{
+	auto original_function = reinterpret_cast<decltype(&ChooseBossIntro)>(MmGetHookTrampoline(g_ArSelfModule, "ChooseBossIntro"));
+	bool shouldSpawnCustom = false;
+	string customBossName = "";
+
+	/*
+	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+	{
+		sol::table count = modState.at(stateNum)["all_behaviors"];
+		for (double var = 0; var < count.size() + 1; var++)
+		{
+			if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
+			{
+				sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
+				if (!result.valid())
+				{
+					sol::error error = result;
+
+					g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+				}
+				else if (result.get<bool>())
+				{
+					shouldSpawnCustom = true;
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					customBossName = tbl.get<string>("Name");
+				}
+			}
+		}
+	}
+
+	if (shouldSpawnCustom)
+	{
+		GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"})});
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+	}*/
+
+	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+
+	/*if (shouldSpawnCustom)
+	{
+		RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0});
+		
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
+	}*/
+
+	return Result;
+}
+
 void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 {
 	vector<string> AllNames;
@@ -290,8 +397,14 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 	AllNames.push_back("gml_Object_obj_enemy_Create_0");
 	AllNames.push_back("gml_Object_obj_swarmer_Step_0");
 	AllNames.push_back("gml_Object_obj_miniboss_template_Step_0");
+	AllNames.push_back("gml_Object_obj_miniboss_template_Draw_0");
 	AllNames.push_back("gml_Object_obj_enemy_Draw_0");
 	AllNames.push_back("gml_Object_obj_enemy_Destroy_0");
+	//Boss data
+	AllNames.push_back("gml_Object_obj_boss_intro_template_Draw_0");
+	AllNames.push_back("gml_Object_obj_beacon_Other_25");
+	AllNames.push_back("gml_Object_obj_boss_template_Step_0");
+	AllNames.push_back("gml_Object_obj_boss_template_Draw_0");
 	//Projectile data
 	AllNames.push_back("gml_Object_obj_bullet_type_Create_0");
 	AllNames.push_back("gml_Object_obj_bullet_type_Step_0");
@@ -327,9 +440,9 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 		for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
 			modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
-			modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + (290 / 2);
+			modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + 120;
 			modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
-			modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + (464 / 2);
+			modState.at(stateNum)["screen_center_y"] = modState.at(stateNum).get<double>("view_x") + 160;
 
 			RValue playerAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_player" });
 			RValue player = g_YYTKInterface->CallBuiltin("instance_find", { playerAsset, 0 });
@@ -350,6 +463,94 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
+			sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
+				{
+					{
+						// Boss scripts 
+						if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
+						{
+							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+							// (run exclusively from obj_boss_intro_template)
+							if ((string)Code->GetName() == (string)"gml_Object_obj_boss_intro_template_Draw_0")
+							{
+								if (tbl.get<string>("Name") == CustomDataString)
+								{
+									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "timer", 0 });
+									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "depth", 100000 });
+									sol::protected_function_result result2 = modState.at(stateNum)["all_behaviors"][var]["BossIntro"].call(InstanceID);
+									if (!result2.valid())
+									{
+										sol::error error = result2;
+
+										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									}
+									g_YYTKInterface->CallBuiltin("gpu_set_zwriteenable", { true });
+									g_YYTKInterface->CallBuiltin("gpu_set_ztestenable", { true });
+									g_YYTKInterface->CallBuiltin("gpu_set_depth", { 100000 });
+									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["BossBackground"].call(InstanceID);
+									if (!result.valid())
+									{
+										sol::error error = result;
+
+										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									}
+									if (g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
+									{
+										g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "myr_bossActive", true });
+									}
+									if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { InstanceID, "myr_bossActive" }).ToBoolean() && !g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
+									{
+										g_YYTKInterface->CallBuiltin("instance_destroy", {InstanceID});
+									}
+								}
+							}
+
+							if ((string)Code->GetName() == (string)"gml_Object_obj_beacon_Other_25")
+							{
+								static bool shouldSpawnCustom = false;
+								static string customBossName = "";
+								if (!FunctionContext.CalledOriginal())
+								{
+									if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
+									{
+										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
+										if (!result.valid())
+										{
+											sol::error error = result;
+
+											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+										}
+										else if (result.get<bool>())
+										{
+											shouldSpawnCustom = true;
+											sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+											customBossName = tbl.get<string>("Name");
+										}
+									}
+								}
+
+								if (shouldSpawnCustom)
+								{
+									//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+									g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+								}
+
+								FunctionContext.Call();
+
+								if (FunctionContext.CalledOriginal())
+								{
+									if (shouldSpawnCustom)
+									{
+										RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0 });
+
+										g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
+									}
+								}
+							}
+						}
+				}
+			}
 			if (is_custom)
 			{
 				if (modState.at(stateNum)["all_behaviors"])
@@ -415,6 +616,48 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 										if (tbl.get<bool>("Miniboss") == true)
 										{
 											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
+											if (!result.valid())
+											{
+												sol::error error = result;
+
+												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+											}
+										}
+									}
+									// Miniboss draw script
+									if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Draw_0")
+									{
+										if (tbl.get<bool>("Miniboss") == true)
+										{
+											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
+											if (!result.valid())
+											{
+												sol::error error = result;
+
+												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+											}
+										}
+									}
+									// Boss step script
+									if ((string)Code->GetName() == (string)"gml_Object_obj_boss_template_Step_0")
+									{
+										if (tbl.get<bool>("Boss") == true)
+										{
+											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
+											if (!result.valid())
+											{
+												sol::error error = result;
+
+												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+											}
+										}
+									}
+									// Boss draw script
+									if ((string)Code->GetName() == (string)"gml_Object_obj_boss_template_Draw_0")
+									{
+										if (tbl.get<bool>("Boss") == true)
+										{
+											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
 											if (!result.valid())
 											{
 												sol::error error = result;
