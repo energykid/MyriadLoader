@@ -147,6 +147,7 @@ sol::state DatabaseLoader::GetModState()
 	inState["player"] = 0;
 	inState["player_x"] = 0;
 	inState["player_y"] = 0;
+	inState["player_dead"] = false;
 	inState["screen_center_x"] = 0;
 	inState["screen_center_y"] = 0;
 
@@ -247,6 +248,8 @@ sol::state DatabaseLoader::GetModState()
 
 	inState["add_screenshake"] = DBLua::AddScreenshake;
 
+	inState["clear_bullets"] = DBLua::ClearBullets;
+
 	inState["spawn_projectile"] = DBLua::SpawnProjectile;
 
 	//inState["get_direction"] = DBLua::DirectionTo;
@@ -294,11 +297,17 @@ void ObjectBehaviorRun(FWFrame& context)
 		RValue playerAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_player" });
 		RValue player = g_YYTKInterface->CallBuiltin("instance_find", { playerAsset, 0 });
 
-		if (player.ToDouble() != -4)
+		modState.at(stateNum)["player_dead"] = false;
+
+		if (g_YYTKInterface->CallBuiltin("instance_exists", {player.ToDouble()}))
 		{
+			modState.at(stateNum)["player"] = player.ToDouble();
 			modState.at(stateNum)["player_x"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "x" }).ToDouble();
 			modState.at(stateNum)["player_y"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "y" }).ToDouble();
-			modState.at(stateNum)["player"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "id" }).ToDouble();
+		}
+		else
+		{
+			modState.at(stateNum)["player_dead"] = true;
 		}
 
 		if (modState.at(stateNum)["all_behaviors"])
@@ -698,6 +707,14 @@ void LoadMods(AurieModule* Module)
 			script_data->m_Functions->m_ScriptFunction,
 			GMHooks::ChooseBossIntro,
 			&original_function
+		);
+
+		MmCreateHook(
+			Module,
+			"QL_WriteFile",
+			WriteFile,
+			WriteFileHook,
+			reinterpret_cast<PVOID*>(&g_WriteFileTrampoline)
 		);
 	}
 

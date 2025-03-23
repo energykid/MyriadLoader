@@ -347,47 +347,47 @@ RValue& DatabaseLoader::GMHooks::ChooseBossIntro(IN CInstance* Self, IN CInstanc
 	bool shouldSpawnCustom = false;
 	string customBossName = "";
 
-	/*
-	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+/*
+for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+{
+	sol::table count = modState.at(stateNum)["all_behaviors"];
+	for (double var = 0; var < count.size() + 1; var++)
 	{
-		sol::table count = modState.at(stateNum)["all_behaviors"];
-		for (double var = 0; var < count.size() + 1; var++)
+		if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
 		{
-			if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
+			sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
+			if (!result.valid())
 			{
-				sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
-				if (!result.valid())
-				{
-					sol::error error = result;
+				sol::error error = result;
 
-					g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-				}
-				else if (result.get<bool>())
-				{
-					shouldSpawnCustom = true;
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					customBossName = tbl.get<string>("Name");
-				}
+				g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+			}
+			else if (result.get<bool>())
+			{
+				shouldSpawnCustom = true;
+				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+				customBossName = tbl.get<string>("Name");
 			}
 		}
 	}
+}
 
-	if (shouldSpawnCustom)
-	{
-		GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"})});
-		g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
-	}*/
+if (shouldSpawnCustom)
+{
+	GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"})});
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+}*/
 
-	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
+RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
-	/*if (shouldSpawnCustom)
-	{
-		RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0});
-		
-		g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
-	}*/
+/*if (shouldSpawnCustom)
+{
+	RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0});
 
-	return Result;
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
+}*/
+
+return Result;
 }
 
 void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
@@ -414,7 +414,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 	AllNames.push_back("gml_Object_obj_player_Draw_0");
 
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
-	
+
 	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
 	{
 		CInstance* GlobalInstance;
@@ -447,10 +447,15 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 			RValue playerAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_player" });
 			RValue player = g_YYTKInterface->CallBuiltin("instance_find", { playerAsset, 0 });
 
-			if (player.ToDouble() != -4)
+			if (g_YYTKInterface->CallBuiltin("instance_exists", { player.ToDouble() }))
 			{
+				modState.at(stateNum)["player"] = player.ToDouble();
 				modState.at(stateNum)["player_x"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "x" }).ToDouble();
 				modState.at(stateNum)["player_y"] = g_YYTKInterface->CallBuiltin("variable_instance_get", { player, "y" }).ToDouble();
+			}
+			else
+			{
+				modState.at(stateNum)["player_dead"] = true;
 			}
 		}
 
