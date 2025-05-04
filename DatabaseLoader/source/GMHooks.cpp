@@ -539,9 +539,9 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								{
 									//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+									FunctionContext.Call();
 								}
 
-								FunctionContext.Call();
 
 								if (FunctionContext.CalledOriginal())
 								{
