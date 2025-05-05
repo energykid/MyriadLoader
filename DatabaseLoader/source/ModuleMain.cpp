@@ -252,6 +252,8 @@ sol::state DatabaseLoader::GetModState()
 
 	inState["spawn_projectile"] = DBLua::SpawnProjectile;
 
+	inState["spawn_laser"] = DBLua::SpawnLaser;
+
 	//inState["get_direction"] = DBLua::DirectionTo;
 
 	inState["add_rooms_to"] = DBLua::AddRoomsTo;

@@ -51,6 +51,7 @@ namespace DatabaseLoader
 		static void ClearBullets(double x, double y);
 		static void AddScreenshake(double amount);
 		static double SpawnProjectile(double x, double y, double xvel, double yvel, sol::object bullet);
+		static double SpawnLaser(double x, double y, double angle, double lifetime, sol::object laser, sol::object laserstart, sol::object lasereend);
 
 		static void AddCallbackTo(double id, sol::protected_function function);
 

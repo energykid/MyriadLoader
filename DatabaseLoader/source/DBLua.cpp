@@ -784,6 +784,62 @@ double DatabaseLoader::DBLua::SpawnProjectile(double x, double y, double xvel, d
 	}
 }
 
+
+double DatabaseLoader::DBLua::SpawnLaser(double x, double y, double angle, double lifetime, sol::object l, sol::object ls, sol::object le)
+{
+	RValue laser;
+	double id;
+	string ll;
+	string lls;
+	string lle;
+
+	switch (l.get_type())
+	{
+	case sol::lua_type_of_v<string>:
+
+		ll = l.as<string>();
+		lls = ls.as<string>();
+		lle = le.as<string>();
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)ll}) }))
+			ll = "obj_enemy_laser";
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)lls}) }))
+			lls = "obj_enemy_laser";
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)lle}) }))
+			lle = "obj_enemy_laser";
+
+		laser = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)ll}) });
+
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { laser, "id" }).ToDouble();
+
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "source_sprite", (string_view)lls });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "end_sprite", (string_view)lle });
+
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "angle", angle });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "lifetime", lifetime });
+		return laser.ToDouble();
+
+	case sol::lua_type_of_v<double>:
+
+		laser = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_enemy_laser"}) });
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { laser, "id" }).ToDouble();
+
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "angle", angle });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "lifetime", lifetime });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "beam_sprite", l.as<double>() });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "source_sprite", ls.as<double>() });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "end_sprite", le.as<double>() });
+		return laser.ToDouble();
+
+	default:
+		return 0;
+	}
+}
+
 void DatabaseLoader::DBLua::AddCallbackTo(double id, sol::protected_function function)
 {
 
