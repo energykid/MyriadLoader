@@ -105,5 +105,14 @@ namespace DatabaseLoader
 		static void EnemyData(
 			FWCodeEvent& FunctionContext
 		);
+
+		static void CartridgeData(
+			FWCodeEvent& FunctionContext
+		);
+
+		static void PlayerData(
+			FWCodeEvent& FunctionContext
+		);
+
 	};
 }

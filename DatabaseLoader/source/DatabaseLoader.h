@@ -97,6 +97,8 @@ namespace DatabaseLoader
 	inline vector<string> customMinibossNames;
 	inline vector<string> customBossNames;
 
+	inline vector<string> customCartridgeNames;
+
 	struct RoomFileReplacement {
 		string sourceName;
 		string destinationName;

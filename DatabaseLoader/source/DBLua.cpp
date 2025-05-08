@@ -702,6 +702,7 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 		string ObjectToSpawn = "obj_swarmer";
 		if (std::find(customMinibossNames.begin(), customMinibossNames.end(), name) != customMinibossNames.end()) ObjectToSpawn = "obj_miniboss_template";
 		if (std::find(customBossNames.begin(), customBossNames.end(), name) != customBossNames.end()) ObjectToSpawn = "obj_boss_template";
+		if (std::find(customCartridgeNames.begin(), customCartridgeNames.end(), name) != customCartridgeNames.end()) ObjectToSpawn = "obj_cartridge";
 
 		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
 			g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)ObjectToSpawn }) });
@@ -722,6 +723,19 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 					if (modState.at(stateNum)["all_behaviors"][var])
 					{
 						if (tbl.get<string>("DataType") == "enemy")
+						{
+							if (tbl.get<string>("Name") == name)
+							{
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
+								if (!result.valid())
+								{
+									sol::error error = result;
+
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
+							}
+						}
+						if (tbl.get<string>("DataType") == "cartridge")
 						{
 							if (tbl.get<string>("Name") == name)
 							{
@@ -839,6 +853,18 @@ double DatabaseLoader::DBLua::SpawnLaser(double x, double y, double angle, doubl
 		return 0;
 	}
 }
+
+
+bool DatabaseLoader::DBLua::CheckCart(double cartid)
+{
+	if (g_YYTKInterface->CallBuiltin("ds_list_find_index", { GMWrappers::GetGlobal("carts_picked"), cartid }).ToDouble() != -1)
+	{
+		return true;
+	}
+	else
+		return false;
+}
+
 
 void DatabaseLoader::DBLua::AddCallbackTo(double id, sol::protected_function function)
 {
@@ -961,6 +987,18 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 		"Draw", [](double) {},
 		"TakeDamage", [](double, double) {});
 }
+
+
+sol::table DatabaseLoader::DBLua::CartridgeData(string name, string shown, string desc)
+{
+	return modState[currentState].create_table_with(
+		"DataType", "cartridge",
+		"Name", name,
+		"ShownName", shown,
+		"Description", desc,
+		"Create", [](double) {});
+}
+
 
 sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 {

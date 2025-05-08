@@ -100,6 +100,29 @@ static void RegisterData(sol::table data)
 			}
 		}
 	}
+
+	if (getType == "cartridge" && getName != "all")
+	{
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
+		{
+			string getShownName = data.get<string>("ShownName");
+			string getDescription = data.get<string>("Description");
+			int id = Files::HashString(getName);
+
+			if (std::find(customCartridgeNames.begin(), customCartridgeNames.end(), getName) == customCartridgeNames.end())
+			{
+
+				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("gen_list"), id, id });
+				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("cart_name"), id, g_YYTKInterface->CallBuiltin("array_create", { 2, (string_view)getShownName })});
+				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("cart_desc"), id, g_YYTKInterface->CallBuiltin("array_create", { 2, (string_view)getDescription })});
+
+				customCartridgeNames.push_back(getName);
+
+				g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created cartridge '" + getName + "' with numeric ID: " + to_string(id));
+			}
+		}
+	}
+
 }
 
 void DatabaseLoader::UnloadMods()
@@ -108,7 +131,7 @@ void DatabaseLoader::UnloadMods()
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
 
-	for (size_t i = 0; i < mods.size(); i++)
+	for (size_t i = 0; i < mods.size(); i++) 
 	{
 		currentState = i;
 
@@ -122,6 +145,7 @@ void DatabaseLoader::UnloadMods()
 	customEnemyNames.clear();
 	customMinibossNames.clear();
 	customBossNames.clear();
+	customCartridgeNames.clear();
 	modState.clear();
 }
 
@@ -152,6 +176,7 @@ sol::state DatabaseLoader::GetModState()
 	inState["screen_center_y"] = 0;
 
 	inState["enemy_data"] = DBLua::EnemyData;
+	inState["cartridge_data"] = DBLua::CartridgeData;
 	inState["projectile_data"] = DBLua::ProjectileData;
 	inState["global_data"] = DBLua::GlobalData;
 	inState["player_data"] = DBLua::PlayerData;
@@ -259,6 +284,8 @@ sol::state DatabaseLoader::GetModState()
 	inState["add_rooms_to"] = DBLua::AddRoomsTo;
 
 	//inState["add_bestiary_entry"] = DBLua::AddBestiaryEntry;
+
+	inState["check_cart"] = DBLua::CheckCart;
 
 	return inState;
 }

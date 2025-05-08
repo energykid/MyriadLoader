@@ -53,6 +53,8 @@ namespace DatabaseLoader
 		static double SpawnProjectile(double x, double y, double xvel, double yvel, sol::object bullet);
 		static double SpawnLaser(double x, double y, double angle, double lifetime, sol::object laser, sol::object laserstart, sol::object lasereend);
 
+		static bool CheckCart(double cartid);
+
 		static void AddCallbackTo(double id, sol::protected_function function);
 
 		static void DrawSetDepth(double dep);
@@ -75,6 +77,7 @@ namespace DatabaseLoader
 		static sol::table DirectionTo(double x1, double y1, double x2, double y2);
 
 		static sol::table EnemyData(string name);
+		static sol::table CartridgeData(string name, string shown, string desc);
 		static sol::table ProjectileData(string name);
 		static sol::table GlobalData();
 		static sol::table PlayerData();
