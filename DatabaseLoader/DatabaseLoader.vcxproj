@@ -72,7 +72,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
+    <OutDir>C:\Users\Roanv\Desktop\StarProv Modding</OutDir>
     <IncludePath>$(ProjectDir)include;F:\includes\lua54\include;F:\includes\sol3\include;</IncludePath>
     <LibraryPath>;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
@@ -81,7 +81,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <ExternalIncludePath>F:\All Downloads\lua-5.4.7;$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
-    <OutDir>F:\All Downloads\DatabaseLoader</OutDir>
+    <OutDir>C:\Users\Roanv\Desktop\StarProv Modding</OutDir>
     <TargetName>MyriadLoader</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -208,6 +208,7 @@ RValue& DatabaseLoader::GMHooks::PlayerTakeHit(IN CInstance* Self, IN CInstance*
 	return Result;
 }
 
+
 RValue& DatabaseLoader::GMHooks::ReloadAllMods(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
 {
 	auto original_function = reinterpret_cast<decltype(&ReloadAllMods)>(MmGetHookTrampoline(g_ArSelfModule, "ReloadAllMods"));
@@ -539,9 +540,9 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								{
 									//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+									FunctionContext.Call();
 								}
 
-								FunctionContext.Call();
 
 								if (FunctionContext.CalledOriginal())
 								{
@@ -820,6 +821,165 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
 								{
 									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
+									if (!result.valid())
+									{
+										sol::error error = result;
+
+										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+void DatabaseLoader::GMHooks::CartridgeData(FWCodeEvent& FunctionContext) {
+	vector<string> AllNames;
+
+	AllNames.push_back("gml_Object_obj_cartridge_Create_0");
+
+	CCode* Code = std::get<2>(FunctionContext.Arguments());
+
+
+	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
+	{
+		CInstance* GlobalInstance;
+
+		RValue view;
+		g_YYTKInterface->GetGlobalInstance(&GlobalInstance);
+
+		g_YYTKInterface->GetBuiltin("view_current", GlobalInstance, 0, view);
+
+		RValue viewCamera = g_YYTKInterface->CallBuiltin("view_get_camera", { view });
+
+		CInstance* Self = std::get<0>(FunctionContext.Arguments());
+		CInstance* Other = std::get<1>(FunctionContext.Arguments());
+		RValue Instance = Self->ToRValue();
+		RValue OtherInstance = Other->ToRValue();
+		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+		double OtherInstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { OtherInstance, "id" }).ToDouble();
+
+		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
+
+		string CustomDataString = "";
+
+		bool is_custom = false;
+		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
+		{
+			is_custom = true;
+			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+		}
+
+		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+		{
+			sol::table count = modState.at(stateNum)["all_behaviors"];
+
+			if (is_custom)
+			{
+				if (modState.at(stateNum)["all_behaviors"])
+				{
+					sol::table count = modState.at(stateNum)["all_behaviors"];
+					for (double var = 0; var < count.size() + 1; var++)
+					{
+						g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_name"), modState.at(stateNum)["all_behaviors"][var]["ShownName"] });
+						g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_desc"), modState.at(stateNum)["all_behaviors"][var]["Description"] });
+						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+						if (modState.at(stateNum)["all_behaviors"][var])
+						{
+							if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
+							{
+								if (tbl.get<string>("DataType") == "cartridge")
+								{
+									if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
+									{
+										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+										if (!result.valid())
+										{
+											sol::error error = result;
+											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				if (modState.at(stateNum)["all_behaviors"])
+				{
+					sol::table count = modState.at(stateNum)["all_behaviors"];
+					for (double var = 0; var < count.size() + 1; var++)
+					{
+						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+						if (modState.at(stateNum)["all_behaviors"][var])
+						{
+							if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
+								|| tbl.get<string>("Name") == "all")
+							{
+								if (tbl.get<string>("DataType") == "cartridge")
+								{
+									if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
+									{
+										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+										if (!result.valid())
+										{
+											sol::error error = result;
+											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void DatabaseLoader::GMHooks::PlayerData(FWCodeEvent& FunctionContext)
+{
+	vector<string> AllNames;
+
+	AllNames.push_back("gml_Object_obj_player_Step_0");
+
+	CCode* Code = std::get<2>(FunctionContext.Arguments());
+
+	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
+	{
+		
+
+		CInstance* Self = std::get<0>(FunctionContext.Arguments());
+		RValue Instance = Self->ToRValue();
+		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
+
+
+		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+		{
+			if (modState.at(stateNum)["all_behaviors"])
+			{
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
+				{
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
+					{
+						if (tbl.get<string>("DataType") == "player")
+						{
+							if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
+								|| tbl.get<string>("Name") == "all")
+							{
+								if ((string)Code->GetName() == (string)"gml_Object_obj_player_Step_0")
+								{
+									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 									if (!result.valid())
 									{
 										sol::error error = result;
