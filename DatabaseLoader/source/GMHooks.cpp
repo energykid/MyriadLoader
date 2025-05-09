@@ -391,6 +391,202 @@ RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arg
 return Result;
 }
 
+
+void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
+{
+
+	vector<string> AllNames;
+	//Alt floor shenanigans
+	AllNames.push_back("gml_Object_obj_nextlevel_Step_0");
+	AllNames.push_back("gml_GlobalScript_set_floormaps");
+	AllNames.push_back("gml_Object_obj_floor_Create_0");
+
+	CCode* Code = std::get<2>(FunctionContext.Arguments());
+
+	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
+	{
+
+		CInstance* Self = std::get<0>(FunctionContext.Arguments());
+		RValue Instance = Self->ToRValue();
+		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+
+		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
+
+		string CustomDataString = "";
+
+		bool is_custom = false;
+		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
+		{
+			is_custom = true;
+			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+		}
+
+		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+		{
+
+			sol::table count = modState.at(stateNum)["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+				if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Step_0")
+				{
+					static bool shouldQueueCustom = false;
+					static string customFloorName = "";
+					static int customFloorNumber = 0;
+
+					RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+					g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
+
+					if (!FunctionContext.CalledOriginal())
+					{
+						sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceFloor"].call();
+						if (!result.valid())
+						{
+							sol::error error = result;
+
+							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+						}
+						else if (result.get<bool>())
+						{
+							shouldQueueCustom = true;
+							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+							customFloorName = tbl.get<string>("Name");
+							customFloorNumber = tbl.get<int>("Floor");
+						}
+					}
+					if (shouldQueueCustom)
+					{
+						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, floordsmap });
+						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap});
+
+						FunctionContext.Call();
+					}
+
+					if (FunctionContext.CalledOriginal())
+					{
+						if (shouldQueueCustom)
+						{
+							RValue nextFloor = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next" });
+
+							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap });
+						}
+					}
+				}
+				if ((string)Code->GetName() == (string)"gml_GlobalScript_set_floormaps")
+				{
+
+					static bool shouldQueueCustom = false;
+					static string customFloorName = "";
+					static int customFloorNumber = 0;
+
+					RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+					g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
+
+					if (!FunctionContext.CalledOriginal())
+					{
+						sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceFloor"].call();
+						if (!result.valid())
+						{
+							sol::error error = result;
+
+							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+						}
+						else if (result.get<bool>())
+						{
+							shouldQueueCustom = true;
+							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+							customFloorName = tbl.get<string>("Name");
+							customFloorNumber = tbl.get<int>("Floor");
+						}
+					}
+					if (shouldQueueCustom)
+					{
+						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, floordsmap });
+						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap });
+
+						FunctionContext.Call();
+					}
+
+					if (FunctionContext.CalledOriginal())
+					{
+						if (shouldQueueCustom)
+						{
+							RValue nextFloor = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next" });
+
+							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap });
+						}
+					}
+				}
+
+			}
+			if (is_custom)
+			{
+				if (modState.at(stateNum)["all_behaviors"])
+				{
+					sol::table count = modState.at(stateNum)["all_behaviors"];
+					for (double var = 0; var < count.size() + 1; var++)
+					{
+						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+						if (modState.at(stateNum)["all_behaviors"][var])
+						{
+							if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
+							{
+								if (tbl.get<string>("DataType") == "floormap")
+								{
+									if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0")
+									{
+										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+										if (!result.valid())
+										{
+											sol::error error = result;
+
+											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+
+				if (modState.at(stateNum)["all_behaviors"])
+				{
+					sol::table count = modState.at(stateNum)["all_behaviors"];
+					for (double var = 0; var < count.size() + 1; var++)
+					{
+						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+						if (modState.at(stateNum)["all_behaviors"][var])
+						{
+							if (tbl.get<string>("DataType") == "floormap")
+							{
+								if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
+									|| tbl.get<string>("Name") == "all")
+								{
+									if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0")
+									{
+										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+										if (!result.valid())
+										{
+											sol::error error = result;
+
+											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+		}
+	}
+}
+
+
 void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 {
 	vector<string> AllNames;
@@ -944,54 +1140,3 @@ void DatabaseLoader::GMHooks::CartridgeData(FWCodeEvent& FunctionContext) {
 	}
 }
 
-void DatabaseLoader::GMHooks::PlayerData(FWCodeEvent& FunctionContext)
-{
-	vector<string> AllNames;
-
-	AllNames.push_back("gml_Object_obj_player_Step_0");
-
-	CCode* Code = std::get<2>(FunctionContext.Arguments());
-
-	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
-	{
-		
-
-		CInstance* Self = std::get<0>(FunctionContext.Arguments());
-		RValue Instance = Self->ToRValue();
-		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
-		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
-
-
-		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
-		{
-			if (modState.at(stateNum)["all_behaviors"])
-			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
-				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
-					{
-						if (tbl.get<string>("DataType") == "player")
-						{
-							if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-								|| tbl.get<string>("Name") == "all")
-							{
-								if ((string)Code->GetName() == (string)"gml_Object_obj_player_Step_0")
-								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}

@@ -1000,6 +1000,18 @@ sol::table DatabaseLoader::DBLua::CartridgeData(string name, string shown, strin
 }
 
 
+sol::table DatabaseLoader::DBLua::FloorData(string name)
+{
+	return modState[currentState].create_table_with(
+		"DataType", "floormap",
+		"Name", name,
+		"Floor", 0,
+		"Rooms", [](string) {},
+		"Music", [](double) {},
+		"ShouldForceFloor", [](double) {return false; });
+}
+
+
 sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 {
 	return modState[currentState].create_table_with(
@@ -1043,3 +1055,5 @@ void DatabaseLoader::DBLua::AddRoomsTo(string sourceName, string destinationName
 		Files::GetSteamDirectory() + "rooms/backup/" + destinationName
 		));
 }
+
+

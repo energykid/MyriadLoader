@@ -118,7 +118,68 @@ static void RegisterData(sol::table data)
 
 				customCartridgeNames.push_back(getName);
 
+
 				g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created cartridge '" + getName + "' with numeric ID: " + to_string(id));
+			}
+		}
+	}
+
+	if (getType == "floormap" && getName != "all")
+	{
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
+		{
+			bool forceFloor = data.get<bool>("ShouldForceFloor");
+			string floorRooms = data.get<string>("Rooms");
+			int id = Files::HashString(getName);
+
+			if (std::find(customFloorNames.begin(), customFloorNames.end(), getName) == customFloorNames.end())
+			{
+
+				RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+				g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
+				string floormapnum = "floormap_" + to_string(data.get<int>("Floor") - 1);
+
+				if (g_YYTKInterface->CallBuiltin("variable_global_exists", { (string_view)floormapnum }))
+				{
+
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "next", id});
+					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "layout", (string_view)floorRooms });
+					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Floor '" + getName + "' (numeric ID " + to_string(id) + ") implemented for floor " + to_string(data.get<int>("Floor")));
+				}
+				else
+				{
+					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created floor '" + getName + "' with numeric ID: " + to_string(id) + " using custom spawning logic");
+				}
+
+				if (forceFloor)
+				{
+					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
+
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "next", g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }) });
+
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "next", g_YYTKInterface->CallBuiltin("ds_map_find_value", {floordsmap, "index"}) });
+
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "layout", (string_view)floorRooms});
+
+					g_YYTKInterface->PrintWarning(to_string(id));
+
+
+					/*
+					RValue thingsize = g_YYTKInterface->CallBuiltin("ds_map_size", { GMWrappers::GetGlobal("current_floormap") });
+					RValue thing = g_YYTKInterface->CallBuiltin("ds_map_find_first", { GMWrappers::GetGlobal("current_floormap") });
+
+					for (int i = 0; i < thingsize.ToDouble() - 1; i++)
+					{
+						if (!thing.ToString().empty())
+						{
+							thing = g_YYTKInterface->CallBuiltin("ds_map_find_next", { GMWrappers::GetGlobal("current_floormap"), thing });
+							g_YYTKInterface->PrintWarning(thing.ToString());
+						}
+					}
+					*/
+				}
+
+				customFloorNames.push_back(getName);
 			}
 		}
 	}
@@ -146,6 +207,7 @@ void DatabaseLoader::UnloadMods()
 	customMinibossNames.clear();
 	customBossNames.clear();
 	customCartridgeNames.clear();
+	customFloorNames.clear();
 	modState.clear();
 }
 
@@ -282,6 +344,8 @@ sol::state DatabaseLoader::GetModState()
 	//inState["get_direction"] = DBLua::DirectionTo;
 
 	inState["add_rooms_to"] = DBLua::AddRoomsTo;
+
+	inState["custom_floor"] = DBLua::FloorData;
 
 	//inState["add_bestiary_entry"] = DBLua::AddBestiaryEntry;
 
