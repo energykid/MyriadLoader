@@ -99,6 +99,8 @@ namespace DatabaseLoader
 
 	inline vector<string> customCartridgeNames;
 
+	inline vector<string> customFloorNames;
+
 	struct RoomFileReplacement {
 		string sourceName;
 		string destinationName;

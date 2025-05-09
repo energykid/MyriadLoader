@@ -102,15 +102,15 @@ namespace DatabaseLoader
 			IN RValue** Arguments
 		);
 
+		static void FloorData(
+			FWCodeEvent& FunctionContext
+		);
+
 		static void EnemyData(
 			FWCodeEvent& FunctionContext
 		);
 
 		static void CartridgeData(
-			FWCodeEvent& FunctionContext
-		);
-
-		static void PlayerData(
 			FWCodeEvent& FunctionContext
 		);
 
