@@ -1007,7 +1007,9 @@ sol::table DatabaseLoader::DBLua::FloorData(string name)
 		"Name", name,
 		"Floor", 0,
 		"Rooms", [](string) {},
+		"RoomsDestination", [](string) {},
 		"Music", [](double) {},
+		"BossList", [](double) {},
 		"ShouldForceFloor", [](double) {return false; });
 }
 

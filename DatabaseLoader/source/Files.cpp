@@ -138,9 +138,26 @@ bool DatabaseLoader::Files::AddRoomsToFile(const std::string& sourcePath, const 
     content1.erase(0, line1.length());
     content2.erase(0, line2.length());
 
-    int glag = std::stoi(line1) + std::stoi(line2);
-    content2.insert(0, to_string(glag));
+    try 
+    {
 
+        int glag = std::stoi(line1) + std::stoi(line2);
+        content2.insert(0, to_string(glag));
+
+    }
+
+    catch (const std::invalid_argument&)
+    {
+        g_YYTKInterface->PrintWarning(line1);
+        g_YYTKInterface->PrintWarning(line2);
+
+    }
+
+    catch (const std::out_of_range&)
+    {
+        g_YYTKInterface->PrintWarning("out of range");
+    }
+    
     destinationFileIn.close();
 
     std::ofstream destinationFile(destinationPath, std::ios::trunc);
@@ -162,4 +179,5 @@ bool DatabaseLoader::Files::AddRoomsToFile(const std::string& sourcePath, const 
     sourceFile.close();
     destinationFile.close();
     return true;
+
 }
