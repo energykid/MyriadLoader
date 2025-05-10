@@ -407,6 +407,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	{
 
 		CInstance* Self = std::get<0>(FunctionContext.Arguments());
+
 		RValue Instance = Self->ToRValue();
 		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
 
@@ -456,9 +457,9 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 					}
 					if (shouldQueueCustom)
 					{
-						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, floordsmap });
-						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap});
-
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, g_YYTKInterface->CallBuiltin("ds_map_find_value", {floordsmap, "index"}), g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"})});
+						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, InstanceID });
+						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "next", g_YYTKInterface->CallBuiltin("array_get", {GMWrappers::GetGlobal("floormap_array"), InstanceID}) });
 						FunctionContext.Call();
 					}
 
@@ -466,54 +467,9 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 					{
 						if (shouldQueueCustom)
 						{
-							RValue nextFloor = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next" });
+							RValue nextFloor = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"}), 0 });
 
-							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap });
-						}
-					}
-				}
-				if ((string)Code->GetName() == (string)"gml_GlobalScript_set_floormaps")
-				{
-
-					static bool shouldQueueCustom = false;
-					static string customFloorName = "";
-					static int customFloorNumber = 0;
-
-					RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
-					g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
-
-					if (!FunctionContext.CalledOriginal())
-					{
-						sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceFloor"].call();
-						if (!result.valid())
-						{
-							sol::error error = result;
-
-							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-						}
-						else if (result.get<bool>())
-						{
-							shouldQueueCustom = true;
-							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-							customFloorName = tbl.get<string>("Name");
-							customFloorNumber = tbl.get<int>("Floor");
-						}
-					}
-					if (shouldQueueCustom)
-					{
-						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, floordsmap });
-						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap });
-
-						FunctionContext.Call();
-					}
-
-					if (FunctionContext.CalledOriginal())
-					{
-						if (shouldQueueCustom)
-						{
-							RValue nextFloor = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next" });
-
-							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("floormap_" + to_string(customFloorNumber)), "next", floordsmap });
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { nextFloor, "myr_CustomName", (string_view)customFloorName});
 						}
 					}
 				}

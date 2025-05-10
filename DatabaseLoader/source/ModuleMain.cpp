@@ -139,9 +139,12 @@ static void RegisterData(sol::table data)
 				g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
 				string floormapnum = "floormap_" + to_string(data.get<int>("Floor") - 1);
 
+				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
+
+				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "floor", "spr_floor_e" });
+
 				if (g_YYTKInterface->CallBuiltin("variable_global_exists", { (string_view)floormapnum }))
 				{
-
 					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "next", id});
 					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "layout", (string_view)floorRooms });
 					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Floor '" + getName + "' (numeric ID " + to_string(id) + ") implemented for floor " + to_string(data.get<int>("Floor")));
@@ -155,13 +158,17 @@ static void RegisterData(sol::table data)
 				{
 					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
 
-					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "next", g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }) });
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "index", g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("floormap_array"), id}) });
 
-					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "next", g_YYTKInterface->CallBuiltin("ds_map_find_value", {floordsmap, "index"}) });
+					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "layout", (string_view)floorRooms});
 
-					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "layout", (string_view)floorRooms});
-
-					g_YYTKInterface->PrintWarning(to_string(id));
+					/*
+					RValue thingersize = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("floormap_array") });
+					for (int i = 0; i < thingersize.ToDouble(); i++)
+					{
+						g_YYTKInterface->PrintWarning(g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("floormap_array"), i }).ToString());
+					}
+					*/
 
 
 					/*
