@@ -129,24 +129,57 @@ static void RegisterData(sol::table data)
 		if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
 		{
 			bool forceFloor = data.get<bool>("ShouldForceFloor");
-			string floorRooms = data.get<string>("Rooms");
+			string floorRooms = Files::GetModsDirectory() + data.get<string>("Rooms");
+			string floorRoomsDestiny = data.get<string>("RoomsDestination");
+			string roomsDirectory = "rooms/";
+
+			double bossList = data.get<double>("BossList");
+
+			string floorRoomsDirectoryDestiny = roomsDirectory.append(floorRoomsDestiny);
+
 			int id = Files::HashString(getName);
 
 			if (std::find(customFloorNames.begin(), customFloorNames.end(), getName) == customFloorNames.end())
 			{
+				//thank orio prisco for this
+				string* stringtogivetostarprov = new string(floorRoomsDestiny);
+				ifstream  src(floorRooms);
+				ofstream  dst(Files::GetSteamDirectory() + "rooms/" + stringtogivetostarprov->c_str());
+				dst << src.rdbuf();
 
+				RValue roomsDestinyString = g_YYTKInterface->CallBuiltin("string", { (string_view)floorRoomsDirectoryDestiny });
+
+
+				RValue floorlist = g_YYTKInterface->CallBuiltin("ds_list_create", {});
 				RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+
+				RValue roomFileNumber = g_YYTKInterface->CallBuiltin("ds_map_size", { GMWrappers::GetGlobal("layout_map") });
+
 				g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
 				string floormapnum = "floormap_" + to_string(data.get<int>("Floor") - 1);
 
 				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
-
+				g_YYTKInterface->CallBuiltin("ds_list_add", { floorlist, roomsDestinyString});
 				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "floor", "spr_floor_e" });
+
+				//the bane of my existence
+				g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "layout", roomsDestinyString});
+
+				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
+
+				if (bossList > 0)
+				{
+					g_YYTKInterface->PrintWarning("woah");
+					RValue bossList_Floor = g_YYTKInterface->CallBuiltin("ds_list_create", {  });
+
+					g_YYTKInterface->CallBuiltin("ds_list_add", { bossList_Floor, bossList });
+					g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", bossList_Floor });
+				}
+
 
 				if (g_YYTKInterface->CallBuiltin("variable_global_exists", { (string_view)floormapnum }))
 				{
-					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "next", id});
-					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "layout", (string_view)floorRooms });
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(floormapnum), "next", floordsmap});
 					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Floor '" + getName + "' (numeric ID " + to_string(id) + ") implemented for floor " + to_string(data.get<int>("Floor")));
 				}
 				else
@@ -156,32 +189,15 @@ static void RegisterData(sol::table data)
 
 				if (forceFloor)
 				{
-					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
-
+					/*
 					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "index", g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("floormap_array"), id}) });
 
-					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "layout", (string_view)floorRooms});
 
-					/*
+					
 					RValue thingersize = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("floormap_array") });
 					for (int i = 0; i < thingersize.ToDouble(); i++)
 					{
 						g_YYTKInterface->PrintWarning(g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("floormap_array"), i }).ToString());
-					}
-					*/
-
-
-					/*
-					RValue thingsize = g_YYTKInterface->CallBuiltin("ds_map_size", { GMWrappers::GetGlobal("current_floormap") });
-					RValue thing = g_YYTKInterface->CallBuiltin("ds_map_find_first", { GMWrappers::GetGlobal("current_floormap") });
-
-					for (int i = 0; i < thingsize.ToDouble() - 1; i++)
-					{
-						if (!thing.ToString().empty())
-						{
-							thing = g_YYTKInterface->CallBuiltin("ds_map_find_next", { GMWrappers::GetGlobal("current_floormap"), thing });
-							g_YYTKInterface->PrintWarning(thing.ToString());
-						}
 					}
 					*/
 				}
