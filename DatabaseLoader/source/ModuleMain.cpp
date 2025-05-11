@@ -46,6 +46,11 @@ string GetUserDirectory() {
 	}
 }
 
+string bossListNum;
+RValue bossListCopy;
+
+
+
 static void RegisterData(sol::table data)
 {
 	sol::table tbl = modState[currentState]["all_behaviors"];
@@ -128,7 +133,6 @@ static void RegisterData(sol::table data)
 	{
 		if (!g_YYTKInterface->CallBuiltin("object_exists", { enemytype }))
 		{
-			bool forceFloor = data.get<bool>("ShouldForceFloor");
 			string floorRooms = Files::GetModsDirectory() + data.get<string>("Rooms");
 			string floorRoomsDestiny = data.get<string>("RoomsDestination");
 			string roomsDirectory = "rooms/";
@@ -141,13 +145,13 @@ static void RegisterData(sol::table data)
 
 			if (std::find(customFloorNames.begin(), customFloorNames.end(), getName) == customFloorNames.end())
 			{
+				RValue roomsDestinyString = g_YYTKInterface->CallBuiltin("string", { (string_view)floorRoomsDirectoryDestiny });
+
 				//thank orio prisco for this
 				string* stringtogivetostarprov = new string(floorRoomsDestiny);
 				ifstream  src(floorRooms);
-				ofstream  dst(Files::GetSteamDirectory() + "rooms/" + stringtogivetostarprov->c_str());
+				ofstream  dst(roomsDestinyString.ToString());
 				dst << src.rdbuf();
-
-				RValue roomsDestinyString = g_YYTKInterface->CallBuiltin("string", { (string_view)floorRoomsDirectoryDestiny });
 
 
 				RValue floorlist = g_YYTKInterface->CallBuiltin("ds_list_create", {});
@@ -156,7 +160,7 @@ static void RegisterData(sol::table data)
 				RValue roomFileNumber = g_YYTKInterface->CallBuiltin("ds_map_size", { GMWrappers::GetGlobal("layout_map") });
 
 				g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
-				string floormapnum = "floormap_" + to_string(data.get<int>("Floor") - 1);
+				string floormapnum = "floormap_" + to_string(data.get<int>("Floor"));
 
 				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
 				g_YYTKInterface->CallBuiltin("ds_list_add", { floorlist, roomsDestinyString});
@@ -165,17 +169,20 @@ static void RegisterData(sol::table data)
 				//the bane of my existence
 				g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "layout", roomsDestinyString});
 
+
 				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
 
-				if (bossList > 0)
+
+				if (bossList > 0 && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }).ToDouble())
 				{
-					g_YYTKInterface->PrintWarning("woah");
-					RValue bossList_Floor = g_YYTKInterface->CallBuiltin("ds_list_create", {  });
+					string bossListNum = "bosslist_" + to_string(data.get<int>("Floor"));
+					RValue bossListCopy = g_YYTKInterface->CallBuiltin("ds_list_copy", { bossListCopy, GMWrappers::GetGlobal(bossListNum) });
 
-					g_YYTKInterface->CallBuiltin("ds_list_add", { bossList_Floor, bossList });
-					g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", bossList_Floor });
+					g_YYTKInterface->CallBuiltin("ds_list_clear", { GMWrappers::GetGlobal(bossListNum) });
+					g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal(bossListNum), bossList});
+
+					g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", (string_view)bossListNum});
 				}
-
 
 				if (g_YYTKInterface->CallBuiltin("variable_global_exists", { (string_view)floormapnum }))
 				{
@@ -187,20 +194,6 @@ static void RegisterData(sol::table data)
 					g_YYTKInterface->Print(CM_LIGHTPURPLE, "[Myriad Loader] Created floor '" + getName + "' with numeric ID: " + to_string(id) + " using custom spawning logic");
 				}
 
-				if (forceFloor)
-				{
-					/*
-					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "index", g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("floormap_array"), id}) });
-
-
-					
-					RValue thingersize = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("floormap_array") });
-					for (int i = 0; i < thingersize.ToDouble(); i++)
-					{
-						g_YYTKInterface->PrintWarning(g_YYTKInterface->CallBuiltin("array_get", { GMWrappers::GetGlobal("floormap_array"), i }).ToString());
-					}
-					*/
-				}
 
 				customFloorNames.push_back(getName);
 			}
@@ -225,6 +218,12 @@ void DatabaseLoader::UnloadMods()
 
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
 	}
+
+	if (!bossListNum.empty())
+	{
+		g_YYTKInterface->CallBuiltin("ds_list_copy", { GMWrappers::GetGlobal(bossListNum), bossListCopy });
+	}
+
 
 	customEnemyNames.clear();
 	customMinibossNames.clear();
@@ -633,6 +632,12 @@ void LoadMods(AurieModule* Module)
 			Module,
 			YYTK::EVENT_FRAME,
 			ObjectBehaviorRun,
+			0);
+
+		yytk_interface->CreateCallback(
+			Module,
+			YYTK::EVENT_OBJECT_CALL,
+			GMHooks::FloorData,
 			0);
 	}
 

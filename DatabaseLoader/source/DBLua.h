@@ -8,6 +8,7 @@ namespace DatabaseLoader
 {
 	class DBLua
 	{
+
 		static void InitDouble(double inst, string varName, double val);
 		static void InitBool(double inst, string varName, bool val);
 		static void InitString(double inst, string varName, string val);
