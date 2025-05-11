@@ -11,6 +11,32 @@ using namespace DatabaseLoader;
 using namespace Aurie;
 using namespace YYTK;
 
+
+RValue ObjectToValueGMH(sol::object obj)
+{
+	switch (obj.get_type())
+	{
+	case sol::lua_type_of_v<double>:
+		return RValue(obj.as<double>());
+	case sol::lua_type_of_v<bool>:
+		return RValue(obj.as<bool>());
+	case sol::lua_type_of_v<string>:
+		return RValue(obj.as<string_view>());
+	}
+}
+sol::lua_value ValueToObjectGMH(RValue obj)
+{
+	switch (obj.m_Kind)
+	{
+	case YYTK::VALUE_REAL:
+		return sol::lua_value(modState[currentState], obj.ToDouble());
+	case YYTK::VALUE_BOOL:
+		return sol::lua_value(modState[currentState], obj.ToBoolean());
+	case YYTK::VALUE_STRING:
+		return sol::lua_value(modState[currentState], obj.ToString());
+	}
+}
+
 RValue& DatabaseLoader::GMHooks::JukeboxInjection(
 	IN CInstance* Self,
 	IN CInstance* Other,
@@ -398,7 +424,6 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	vector<string> AllNames;
 	//Alt floor shenanigans
 	AllNames.push_back("gml_Object_obj_nextlevel_Step_0");
-	AllNames.push_back("gml_GlobalScript_set_floormaps");
 	AllNames.push_back("gml_Object_obj_floor_Create_0");
 
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
@@ -422,68 +447,84 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
 		}
 
-		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
-		{
 
-			sol::table count = modState.at(stateNum)["all_behaviors"];
+		for (auto& foo : modState)
+		{
+			sol::table count = foo["all_behaviors"];
 			for (double var = 0; var < count.size() + 1; var++)
 			{
-				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+				sol::table tbl = foo["all_behaviors"][var];
 				if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Step_0")
 				{
 					static bool shouldQueueCustom = false;
 					static string customFloorName = "";
 					static int customFloorNumber = 0;
+					static string customFloorNumberFull = "";
 
 					RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
 					g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
 
 					if (!FunctionContext.CalledOriginal())
 					{
-						sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceFloor"].call();
-						if (!result.valid())
+						if (foo["all_behaviors"][var]["Floor"] != 0)
 						{
-							sol::error error = result;
 
-							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							g_YYTKInterface->PrintWarning("wololo");
+							sol::protected_function_result result = foo["all_behaviors"][var]["ShouldForceFloor"].call();
+							g_YYTKInterface->PrintWarning("wololo");
+							if (!result.valid())
+							{
+								sol::error error = result;
+
+								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+							}
+							else if (result.get<bool>())
+							{
+								g_YYTKInterface->PrintWarning("work bro");
+								shouldQueueCustom = true;
+								sol::table tbl = foo["all_behaviors"][var];
+								customFloorName = tbl.get<string>("Name");
+								customFloorNumber = tbl.get<int>("Floor");
+								customFloorNumberFull = "floormap_" + customFloorNumber;
+							}
 						}
-						else if (result.get<bool>())
-						{
-							shouldQueueCustom = true;
-							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-							customFloorName = tbl.get<string>("Name");
-							customFloorNumber = tbl.get<int>("Floor");
-						}
+
 					}
 					if (shouldQueueCustom)
 					{
-						g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, g_YYTKInterface->CallBuiltin("ds_map_find_value", {floordsmap, "index"}), g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"})});
-						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, InstanceID });
-						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal("current_floormap"), "next", g_YYTKInterface->CallBuiltin("array_get", {GMWrappers::GetGlobal("floormap_array"), InstanceID}) });
+						g_YYTKInterface->PrintWarning("work bro");
+						g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", InstanceID });
+						g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, floordsmap });
+						g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", g_YYTKInterface->CallBuiltin("array_get", {GMWrappers::GetGlobal("floormap_array"), floordsmap}) });
+						
 						FunctionContext.Call();
 					}
+					
 
 					if (FunctionContext.CalledOriginal())
 					{
 						if (shouldQueueCustom)
 						{
+							g_YYTKInterface->PrintWarning("work bro");
+							g_YYTKInterface->PrintWarning(g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "next" }).ToString());
 							RValue nextFloor = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"}), 0 });
 
 							g_YYTKInterface->CallBuiltin("variable_instance_set", { nextFloor, "myr_CustomName", (string_view)customFloorName});
 						}
 					}
+
 				}
 
 			}
 			if (is_custom)
 			{
-				if (modState.at(stateNum)["all_behaviors"])
+				if (foo["all_behaviors"])
 				{
-					sol::table count = modState.at(stateNum)["all_behaviors"];
+					sol::table count = foo["all_behaviors"];
 					for (double var = 0; var < count.size() + 1; var++)
 					{
-						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-						if (modState.at(stateNum)["all_behaviors"][var])
+						sol::table tbl = foo["all_behaviors"][var];
+						if (foo["all_behaviors"][var])
 						{
 							if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
 							{
@@ -491,7 +532,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 								{
 									if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+										sol::protected_function_result result = foo["all_behaviors"][var]["Create"].call(InstanceID);
 										if (!result.valid())
 										{
 											sol::error error = result;
@@ -499,6 +540,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
 										}
 									}
+
 								}
 							}
 						}
@@ -508,13 +550,13 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 			else
 			{
 
-				if (modState.at(stateNum)["all_behaviors"])
+				if (foo["all_behaviors"])
 				{
-					sol::table count = modState.at(stateNum)["all_behaviors"];
+					sol::table count = foo["all_behaviors"];
 					for (double var = 0; var < count.size() + 1; var++)
 					{
-						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-						if (modState.at(stateNum)["all_behaviors"][var])
+						sol::table tbl = foo["all_behaviors"][var];
+						if (foo["all_behaviors"][var])
 						{
 							if (tbl.get<string>("DataType") == "floormap")
 							{
@@ -523,7 +565,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 								{
 									if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+										sol::protected_function_result result = foo["all_behaviors"][var]["Create"].call(InstanceID);
 										if (!result.valid())
 										{
 											sol::error error = result;
@@ -592,6 +634,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 
 		for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
+
 			modState.at(stateNum)["view_x"] = g_YYTKInterface->CallBuiltin("camera_get_view_x", { viewCamera }).ToDouble();
 			modState.at(stateNum)["screen_center_x"] = modState.at(stateNum).get<double>("view_x") + 120;
 			modState.at(stateNum)["view_y"] = g_YYTKInterface->CallBuiltin("camera_get_view_y", { viewCamera }).ToDouble();
@@ -628,6 +671,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 						// Boss scripts 
 						if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
 						{
+
 							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
 							// (run exclusively from obj_boss_intro_template)
 							if ((string)Code->GetName() == (string)"gml_Object_obj_boss_intro_template_Draw_0")
