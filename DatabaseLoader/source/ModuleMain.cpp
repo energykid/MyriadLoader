@@ -139,36 +139,12 @@ static void RegisterData(sol::table data)
 
 			double bossList = data.get<double>("BossList");
 
-			string floorRoomsDirectoryDestiny = roomsDirectory.append(floorRoomsDestiny);
-
 			int id = Files::HashString(getName);
 
 			if (std::find(customFloorNames.begin(), customFloorNames.end(), getName) == customFloorNames.end())
 			{
-				RValue roomsDestinyString = g_YYTKInterface->CallBuiltin("string", { (string_view)floorRoomsDirectoryDestiny });
-
-				//thank orio prisco for this
-				string* stringtogivetostarprov = new string(floorRoomsDestiny);
-				ifstream  src(floorRooms);
-				ofstream  dst(roomsDestinyString.ToString());
-				dst << src.rdbuf();
-
-
-				RValue floorlist = g_YYTKInterface->CallBuiltin("ds_list_create", {});
 				RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
-
-				RValue roomFileNumber = g_YYTKInterface->CallBuiltin("ds_map_size", { GMWrappers::GetGlobal("layout_map") });
-
-				g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
 				string floormapnum = "floormap_" + to_string(data.get<int>("Floor"));
-
-				g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
-				g_YYTKInterface->CallBuiltin("ds_list_add", { floorlist, roomsDestinyString});
-				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "floor", "spr_floor_e" });
-
-				//the bane of my existence
-				g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "layout", roomsDestinyString});
-
 
 				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
 
@@ -264,6 +240,7 @@ sol::state DatabaseLoader::GetModState()
 	inState["projectile_data"] = DBLua::ProjectileData;
 	inState["global_data"] = DBLua::GlobalData;
 	inState["player_data"] = DBLua::PlayerData;
+	inState["custom_floor"] = DBLua::FloorData;
 
 	inState["register_data"] = RegisterData;
 
@@ -366,8 +343,6 @@ sol::state DatabaseLoader::GetModState()
 	//inState["get_direction"] = DBLua::DirectionTo;
 
 	inState["add_rooms_to"] = DBLua::AddRoomsTo;
-
-	inState["custom_floor"] = DBLua::FloorData;
 
 	//inState["add_bestiary_entry"] = DBLua::AddBestiaryEntry;
 
@@ -583,12 +558,14 @@ void LoadMods(AurieModule* Module)
 	string savedir = Files::GetModSavesDirectory();
 	string rooms = Files::GetSteamDirectory() + "rooms/";
 	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
+	string customMusic = Files::GetSteamDirectory() + "customMusic/";
 
 	if (firstLoad)
 	{
 		Files::MakeDirectory(dir);
 		Files::MakeDirectory(savedir);
 		Files::MakeDirectory(roomsBackup);
+		Files::MakeDirectory(customMusic);
 	}
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
