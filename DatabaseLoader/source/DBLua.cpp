@@ -456,7 +456,13 @@ double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
 
-	//Files::CopyFileTo(Files::GetModsDirectory() + path, Files::GetSteamDirectory());
+	/*
+	fs::path source = Files::GetModsDirectory() + path;
+	fs::path destiny = Files::GetSteamDirectory() + "customMusic/";
+	auto target = destiny / source.filename();
+	
+	fs::copy_file(source, target, fs::copy_options::overwrite_existing);
+	*/
 
 	return snd.ToDouble();
 }
@@ -719,6 +725,8 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 				sol::table count = modState.at(stateNum)["all_behaviors"];
 				for (double var = 0; var < count.size() + 1; var++)
 				{
+
+
 					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
 					if (modState.at(stateNum)["all_behaviors"][var])
 					{
@@ -1006,9 +1014,12 @@ sol::table DatabaseLoader::DBLua::FloorData(string name)
 		"DataType", "floormap",
 		"Name", name,
 		"Floor", 0,
+		"Caption", [](string) {},
+		"Tileset", [](double) { return GetAsset("spr_floor_mask"); },
 		"Rooms", [](string) {},
 		"RoomsDestination", [](string) {},
-		"Music", [](double) {},
+		"Create", [](double) {},
+		"Music", [](double) {return GetAsset("mus_floor6");},
 		"BossList", [](double) {},
 		"ShouldForceFloor", [](double) {return false; });
 }
