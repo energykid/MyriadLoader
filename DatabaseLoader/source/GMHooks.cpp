@@ -467,9 +467,9 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 				string roomsDirectory = "rooms/";
 				double music;
 
-				double id = Files::HashString(tbl.get<string>("Name"));
+				int id = Files::HashString(tbl.get<string>("Name"));
 
-				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id});
+				
 
 				if (tbl.get<string>("DataType") == "floormap")
 				{
@@ -477,6 +477,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Step_0")
 					{
+						g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
 
 						static bool shouldQueueCustom = false;
 						static string customFloorName = "";
@@ -570,16 +571,13 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						}
 						else
 						{
-							g_YYTKInterface->PrintWarning(g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToString());
-							g_YYTKInterface->PrintWarning(to_string(id));
 
 							if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
 							{
 								auto floorMusic = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "music" });
 
-								g_YYTKInterface->PrintWarning("woah");
 
-								//DBLua::DoMusic(floorMusic.ToDouble());
+								DBLua::DoMusic(floorMusic.ToDouble());
 							}
 						}
 					}
