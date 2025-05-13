@@ -12,6 +12,30 @@ using namespace DatabaseLoader;
 using namespace Aurie;
 using namespace YYTK;
 
+RValue ObjectToValueGMH(sol::object obj)
+{
+	switch (obj.get_type())
+	{
+	case sol::lua_type_of_v<double>:
+		return RValue(obj.as<double>());
+	case sol::lua_type_of_v<bool>:
+		return RValue(obj.as<bool>());
+	case sol::lua_type_of_v<string>:
+		return RValue(obj.as<string_view>());
+	}
+}
+sol::lua_value ValueToObjectGMH(RValue obj)
+{
+	switch (obj.m_Kind)
+	{
+	case YYTK::VALUE_REAL:
+		return sol::lua_value(modState[currentState], obj.ToDouble());
+	case YYTK::VALUE_BOOL:
+		return sol::lua_value(modState[currentState], obj.ToBoolean());
+	case YYTK::VALUE_STRING:
+		return sol::lua_value(modState[currentState], obj.ToString());
+	}
+}
 
 RValue& DatabaseLoader::GMHooks::JukeboxInjection(
 	IN CInstance* Self,
@@ -403,6 +427,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	AllNames.push_back("gml_Object_obj_room_Create_0");
 	AllNames.push_back("gml_Object_obj_room_Other_10");
 	AllNames.push_back("gml_Object_obj_floor_Create_0");
+	AllNames.push_back("gml_Object_obj_nextlevel_Collision_obj_player");
 
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
 
@@ -412,6 +437,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 		CInstance* Self = std::get<0>(FunctionContext.Arguments());
 
 		RValue Instance = Self->ToRValue();
+
 		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
 
 		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
@@ -425,7 +451,9 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
 		}
 
-		RValue floordsmap;
+		RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+		g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
+
 
 		for (auto& stateNum : modState)
 		{
@@ -439,8 +467,14 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 				string roomsDirectory = "rooms/";
 				double music;
 
+				double id = Files::HashString(tbl.get<string>("Name"));
+
+				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id});
+
 				if (tbl.get<string>("DataType") == "floormap")
 				{
+
+
 					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Step_0")
 					{
 
@@ -449,12 +483,9 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						static int customFloorNumber = 0;
 						static string customFloorNumberFull = "";
 
-						floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
-						g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
-
 
 						music = tbl.get<double>("Music");
-
+						
 						double bossList = tbl.get<double>("BossList");
 
 						string floorRoomsDirectoryDestiny = roomsDirectory.append(floorRoomsDestiny);
@@ -497,7 +528,6 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 								}
 								else if (result.get<bool>())
 								{
-
 									shouldQueueCustom = true;
 									sol::table tbl = stateNum["all_behaviors"][var];
 									customFloorName = tbl.get<string>("Name");
@@ -509,9 +539,8 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						}
 						if (shouldQueueCustom)
 						{
-							g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", InstanceID });
-							g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), InstanceID, floordsmap });
-							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", InstanceID});
+							g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
+							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", id});
 							g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "next", customFloorNumber + 4 });
 							FunctionContext.Call();
 						}
@@ -523,13 +552,14 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 							{
 								RValue nextFloor = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"}), 0 });
 
+
 								g_YYTKInterface->CallBuiltin("variable_instance_set", { nextFloor, "myr_CustomName", (string_view)customFloorName });
+								
 							}
 						}
 					}
 
-
-					if ((string)Code->GetName() == (string)"gml_Object_obj_room_Other_10")
+					if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 					{
 						sol::protected_function_result result = stateNum["all_behaviors"][var]["Create"].call(InstanceID);
 						if (!result.valid())
@@ -540,7 +570,17 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						}
 						else
 						{
-							g_YYTKInterface->PrintWarning("a");
+							g_YYTKInterface->PrintWarning(g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToString());
+							g_YYTKInterface->PrintWarning(to_string(id));
+
+							if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
+							{
+								auto floorMusic = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "music" });
+
+								g_YYTKInterface->PrintWarning("woah");
+
+								//DBLua::DoMusic(floorMusic.ToDouble());
+							}
 						}
 					}
 
