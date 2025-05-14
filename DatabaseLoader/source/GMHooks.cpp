@@ -427,6 +427,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	AllNames.push_back("gml_Object_obj_room_Create_0");
 	AllNames.push_back("gml_Object_obj_room_Step_0");
 	AllNames.push_back("gml_Object_obj_room_Other_10");
+	AllNames.push_back("gml_Object_obj_fakefloor_Create_0");
 	AllNames.push_back("gml_Object_obj_floor_Create_0");
 	AllNames.push_back("gml_Object_obj_nextlevel_Collision_obj_player");
 
@@ -473,6 +474,10 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 				if (tbl.get<string>("DataType") == "floormap")
 				{
+					if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", { Self, "has_pasted_blocks" }).ToBoolean())
+					{
+						g_YYTKInterface->CallBuiltin("bool", { Self, "has_pasted_blocks", true });
+					}
 
 					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Create_0")
 					{
@@ -562,7 +567,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						}
 					}
 
-					if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
+					if (g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
 					{
 
 						if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
@@ -581,6 +586,37 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 							}
 							DBLua::DoMusic(floorMusic);
 							
+						}
+						
+						if ((string)Code->GetName() == (string)"gml_Object_obj_fakefloor_Create_0");
+						{
+							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_fakefloor" });
+							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
+
+
+							for (int i = 0; i < allRooms; i++)
+							{
+								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset")});
+							}
+
+						}
+						if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0");
+						{
+							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_floor" });
+							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
+							RValue beacon = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_beacon" });
+							RValue activeRoom = GMWrappers::GetGlobal("room_active");
+
+
+
+							for (int i = 0; i < allRooms; i++)
+							{
+								if (!g_YYTKInterface->CallBuiltin("variable_instance_get", { Self, "has_pasted_blocks" }).ToBoolean() && g_YYTKInterface->CallBuiltin("variable_instance_get", {g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index"}).ToDouble() == 266)
+								{
+									g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset") });
+								}
+							}
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "has_pasted_blocks", false });
 						}
 					}
 
