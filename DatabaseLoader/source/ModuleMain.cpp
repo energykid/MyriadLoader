@@ -148,7 +148,7 @@ static void RegisterData(sol::table data)
 
 				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
 
-
+				/*
 				if (bossList > 0 && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }).ToDouble())
 				{
 					string bossListNum = "bosslist_" + to_string(data.get<int>("Floor"));
@@ -158,7 +158,7 @@ static void RegisterData(sol::table data)
 					g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal(bossListNum), bossList});
 
 					g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", (string_view)bossListNum});
-				}
+				}*/
 
 				if (g_YYTKInterface->CallBuiltin("variable_global_exists", { (string_view)floormapnum }))
 				{
@@ -558,14 +558,12 @@ void LoadMods(AurieModule* Module)
 	string savedir = Files::GetModSavesDirectory();
 	string rooms = Files::GetSteamDirectory() + "rooms/";
 	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
-	string customMusic = Files::GetSteamDirectory() + "customMusic/";
 
 	if (firstLoad)
 	{
 		Files::MakeDirectory(dir);
 		Files::MakeDirectory(savedir);
 		Files::MakeDirectory(roomsBackup);
-		Files::MakeDirectory(customMusic);
 	}
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);

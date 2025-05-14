@@ -425,6 +425,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	//Alt floor shenanigans
 	AllNames.push_back("gml_Object_obj_nextlevel_Step_0");
 	AllNames.push_back("gml_Object_obj_room_Create_0");
+	AllNames.push_back("gml_Object_obj_room_Step_0");
 	AllNames.push_back("gml_Object_obj_room_Other_10");
 	AllNames.push_back("gml_Object_obj_floor_Create_0");
 	AllNames.push_back("gml_Object_obj_nextlevel_Collision_obj_player");
@@ -469,7 +470,6 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 				int id = Files::HashString(tbl.get<string>("Name"));
 
-				
 
 				if (tbl.get<string>("DataType") == "floormap")
 				{
@@ -562,23 +562,23 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 					if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 					{
-						sol::protected_function_result result = stateNum["all_behaviors"][var]["Create"].call(InstanceID);
-						if (!result.valid())
-						{
-							sol::error error = result;
 
-							g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-						}
-						else
+						if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
 						{
+							double floorMusic = tbl.get<double>("Music");
 
-							if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
+
+							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_room" });
+							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
+
+							GMWrappers::SetGlobal("current_music", floorMusic);
+
+							for (int i = 0; i < allRooms; i++)
 							{
-								auto floorMusic = g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "music" });
-
-
-								DBLua::DoMusic(floorMusic.ToDouble());
+								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "room_theme", floorMusic});
 							}
+							DBLua::DoMusic(floorMusic);
+							
 						}
 					}
 
