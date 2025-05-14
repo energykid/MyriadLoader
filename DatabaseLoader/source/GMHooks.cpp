@@ -423,7 +423,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 	vector<string> AllNames;
 	//Alt floor shenanigans
-	AllNames.push_back("gml_Object_obj_nextlevel_Step_0");
+	AllNames.push_back("gml_Object_obj_nextlevel_Create_0");
 	AllNames.push_back("gml_Object_obj_room_Create_0");
 	AllNames.push_back("gml_Object_obj_room_Step_0");
 	AllNames.push_back("gml_Object_obj_room_Other_10");
@@ -474,20 +474,13 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 				if (tbl.get<string>("DataType") == "floormap")
 				{
 
-
-					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Step_0")
+					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Create_0")
 					{
-						g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
-
 						static bool shouldQueueCustom = false;
 						static string customFloorName = "";
 						static int customFloorNumber = 0;
 						static string customFloorNumberFull = "";
 
-
-						music = tbl.get<double>("Music");
-						
-						double bossList = tbl.get<double>("BossList");
 
 						string floorRoomsDirectoryDestiny = roomsDirectory.append(floorRoomsDestiny);
 
@@ -500,9 +493,19 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						ofstream  dst(roomsDestinyString.ToString());
 						dst << src.rdbuf();
 
+						g_YYTKInterface->PrintWarning("ohshit");
+
+						g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
+
 						g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "layout", roomsDestinyString });
 						g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "music", music });
 
+
+
+
+						music = tbl.get<double>("Music");
+
+						double bossList = tbl.get<double>("BossList");
 						/*
 						if (bossList > 0 && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }).ToDouble())
 						{
@@ -513,8 +516,8 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 							g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal(bossListNum), bossList });
 
 							g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", (string_view)bossListNum });
-						}
-						*/
+						}*/
+
 						if (!FunctionContext.CalledOriginal())
 						{
 							if (stateNum["all_behaviors"][var]["Floor"] != 0)
@@ -541,7 +544,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						if (shouldQueueCustom)
 						{
 							g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
-							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", id});
+							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", id });
 							g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "next", customFloorNumber + 4 });
 							FunctionContext.Call();
 						}
@@ -555,7 +558,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 
 								g_YYTKInterface->CallBuiltin("variable_instance_set", { nextFloor, "myr_CustomName", (string_view)customFloorName });
-								
+
 							}
 						}
 					}
