@@ -493,7 +493,6 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						ofstream  dst(roomsDestinyString.ToString());
 						dst << src.rdbuf();
 
-						g_YYTKInterface->PrintWarning("ohshit");
 
 						g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
 
@@ -563,10 +562,10 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						}
 					}
 
-					if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
+					if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
 					{
 
-						if (tbl.get<double>("Music") && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
+						if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 						{
 							double floorMusic = tbl.get<double>("Music");
 
