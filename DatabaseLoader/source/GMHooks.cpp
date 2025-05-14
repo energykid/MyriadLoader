@@ -604,10 +604,6 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						{
 							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_floor" });
 							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
-							RValue beacon = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_beacon" });
-							RValue activeRoom = GMWrappers::GetGlobal("room_active");
-
-
 
 							for (int i = 0; i < allRooms; i++)
 							{
@@ -616,7 +612,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset") });
 								}
 							}
-							g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "has_pasted_blocks", false });
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "has_pasted_blocks", true });
 						}
 					}
 
