@@ -453,8 +453,6 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
 		}
 
-		RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
-		g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
 
 
 		for (auto& stateNum : modState)
@@ -464,23 +462,23 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 			{
 				sol::table tbl = stateNum["all_behaviors"][var];
 
-				string floorRooms = Files::GetModsDirectory() + tbl.get<string>("Rooms");
-				string floorRoomsDestiny = tbl.get<string>("RoomsDestination");
-				string roomsDirectory = "rooms/";
-				double music;
 
 				int id = Files::HashString(tbl.get<string>("Name"));
 
 
 				if (tbl.get<string>("DataType") == "floormap")
 				{
-					if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", { Self, "has_pasted_blocks" }).ToBoolean())
-					{
-						g_YYTKInterface->CallBuiltin("bool", { Self, "has_pasted_blocks", true });
-					}
 
 					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Create_0")
 					{
+						RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+						g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
+
+						string floorRooms = Files::GetModsDirectory() + tbl.get<string>("Rooms");
+						string floorRoomsDestiny = tbl.get<string>("RoomsDestination");
+						string roomsDirectory = "rooms/";
+						double music;
+
 						static bool shouldQueueCustom = false;
 						static string customFloorName = "";
 						static int customFloorNumber = 0;
@@ -547,6 +545,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 						}
 						if (shouldQueueCustom)
 						{
+
 							g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
 							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", id });
 							g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "next", customFloorNumber + 4 });
@@ -569,7 +568,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 					if (g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
 					{
-
+						
 						if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 						{
 							double floorMusic = tbl.get<double>("Music");
@@ -582,8 +581,9 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 							for (int i = 0; i < allRooms; i++)
 							{
-								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "room_theme", floorMusic});
+								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "room_theme", floorMusic });
 							}
+
 							DBLua::DoMusic(floorMusic);
 							
 						}
@@ -596,8 +596,12 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 							for (int i = 0; i < allRooms; i++)
 							{
-								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset")});
+								if (g_YYTKInterface->CallBuiltin("variable_instance_get", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index" }).ToDouble() == 266)
+								{
+									g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset") });
+								}
 							}
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "has_pasted_fake_blocks", true });
 
 						}
 						if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0");
@@ -607,7 +611,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 							for (int i = 0; i < allRooms; i++)
 							{
-								if (!g_YYTKInterface->CallBuiltin("variable_instance_get", { Self, "has_pasted_blocks" }).ToBoolean() && g_YYTKInterface->CallBuiltin("variable_instance_get", {g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index"}).ToDouble() == 266)
+								if (g_YYTKInterface->CallBuiltin("variable_instance_get", {g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index"}).ToDouble() == 266)
 								{
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset") });
 								}
