@@ -45,8 +45,74 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
-		static void ContentDataEvents(
+		static RValue& PlayerTakeHit(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& ReloadAllMods(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& SpawnRoomObject(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& WriteSaveData(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& WriteMidSave(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& ExitGame(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& EnterRun(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+		static RValue& ChooseBossIntro(
+			IN CInstance* Self,
+			IN CInstance* Other,
+			OUT RValue& Result,
+			IN int ArgumentCount,
+			IN RValue** Arguments
+		);
+
+		static void FloorData(
 			FWCodeEvent& FunctionContext
 		);
+
+		static void EnemyData(
+			FWCodeEvent& FunctionContext
+		);
+
+		static void CartridgeData(
+			FWCodeEvent& FunctionContext
+		);
+
 	};
 }

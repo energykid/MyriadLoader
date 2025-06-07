@@ -24,8 +24,10 @@ namespace DatabaseLoader
 		static string GetModSavesDirectory();
 		static std::vector<filesystem::path> GetImmediateSubfolders(const std::string& dir_path);
 		static bool CopyFileTo(const std::string& sourcePath, const std::string& destinationPath);
+		static bool AddRoomsToFile(const std::string& sourcePath, const std::string& destinationPath);
 		static std::vector<filesystem::path> GetFilesOfType(const std::string& dir_path, const std::string& extension);
 		static bool MakeDirectory(string dir_name);
 		static std::string GetFileContents(const std::string& filePath);
+		static int HashString(string name);
 	};
 }

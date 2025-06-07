@@ -93,31 +93,28 @@ namespace DatabaseLoader
 	inline sol::state dl_lua;
 	inline vector<sol::state> modState;
 
-	inline sol::protected_function dummyFunction;
+	inline vector<string> customEnemyNames;
+	inline vector<string> customMinibossNames;
+	inline vector<string> customBossNames;
 
-	struct ContentData {
-	public:
-		std::string DataType;
-		std::string Name;
+	inline vector<string> customCartridgeNames;
 
-		std::function<void(double)> Create = [](double) {};
-		std::function<void(double)> Step = [](double) {};
-		std::function<void(double)> Destroy = [](double) {};
-		std::function<void(double, double)> TakeDamage = [](double, double) {};
-		std::function<void(double)> Draw = [](double) {};
-		std::function<void()> DrawUI = []() {};
+	inline vector<string> customFloorNames;
 
-		ContentData(const sol::table& data_table) :
-			DataType(data_table.get<string>("DataType")),
-			Name(data_table.get<string>("Name")),
-			Create(data_table.get_or("Create", dummyFunction)),
-			Step(data_table.get_or("Step", dummyFunction)),
-			Destroy(data_table.get_or("Destroy", dummyFunction)),
-			TakeDamage(data_table.get_or("TakeDamage", dummyFunction)),
-			Draw(data_table.get_or("Draw", dummyFunction)),
-			DrawUI(data_table.get_or("DrawUI", dummyFunction))
-		{}
+	struct RoomFileReplacement {
+		string sourceName;
+		string destinationName;
+		string backupName;
+
+		RoomFileReplacement(string name, string name2, string name3) : sourceName(name), destinationName(name2), backupName(name3) {}
 	};
 
-	static inline vector<ContentData> AllData;
+	inline vector<RoomFileReplacement> roomFiles;
+
+	class MusicType {
+	public:
+		MusicType(double num, const string name) : ID(num), Name(name) {}
+		double ID;
+		string Name;
+	};
 }

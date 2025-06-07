@@ -3,7 +3,6 @@
 #include "YYToolkit/YYTK_Shared.hpp"
 #include "DBLua.h"
 #include "GMWrappers.h"
-#include "DatabaseLoader.h"
 #include "ModuleMain.h"
 #include "Files.h"
 #include <map>
@@ -129,7 +128,7 @@ AurieStatus DatabaseLoader::DBLua::CallBuiltinExLua(
 	return AURIE_SUCCESS;
 }
 
-void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, std::function<void(double)> func)
+void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_function func)
 {
 	RValue object_index = g_YYTKInterface->CallBuiltin(
 		"asset_get_index",
@@ -151,7 +150,49 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, std::function<v
 			}
 		);
 
-		func(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
+		sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
+		if (!result.valid())
+		{
+			sol::error error = result;
+
+			g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+		}
+	}
+}
+void DatabaseLoader::DBLua::InvokeWithCustomData(string Name, sol::protected_function func)
+{
+	RValue object_index = g_YYTKInterface->CallBuiltin(
+		"asset_get_index",
+		{ "obj_enemy" }
+	);
+
+	int64_t object_count = static_cast<int64_t>(g_YYTKInterface->CallBuiltin(
+		"instance_number",
+		{ object_index }
+	).ToDouble());
+
+	for (int64_t i = 0; i < object_count; i++)
+	{
+		RValue instance = g_YYTKInterface->CallBuiltin(
+			"instance_find",
+			{
+				object_index,
+				i
+			}
+		);
+
+		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { instance, "myr_CustomName" }))
+		{
+			if (g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "myr_CustomName" }).ToString() == Name)
+			{
+				sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
+				if (!result.valid())
+				{
+					sol::error error = result;
+					g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+				}
+			}
+		}
 	}
 }
 
@@ -388,7 +429,7 @@ Register a custom sound effect from the provided file path.
 */
 double DatabaseLoader::DBLua::GetCustomSound(string path)
 {
-	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
+	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("MyriadLoader/Mods/" + path) });
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("snd_list"), snd });
 
@@ -396,7 +437,7 @@ double DatabaseLoader::DBLua::GetCustomSound(string path)
 }
 
 /***
-Register a custom music piece from the provided file path, then add it to the jukebox.
+Register a custom music piece from the provided file path.
 @function custom_music
 @param path the path (starting at DatabaseLoader/Mods/) to get the sound from
 @param musicName the name this music piece will have at the jukebox
@@ -404,18 +445,24 @@ Register a custom music piece from the provided file path, then add it to the ju
 */
 double DatabaseLoader::DBLua::GetCustomMusic(string path, string musicName)
 {
-	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("DatabaseLoader/Mods/" + path) });
+	RValue snd = g_YYTKInterface->CallBuiltin("audio_create_stream", { (string_view)("MyriadLoader/Mods/" + path) });
 
-	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "dbl_CustomMusicList" }))
+	if (!g_YYTKInterface->CallBuiltin("variable_global_exists", { "myr_CustomMusicList" }))
 	{
-		g_YYTKInterface->CallBuiltin("variable_global_set", { "dbl_CustomMusicList", g_YYTKInterface->CallBuiltin("array_create", {}) });
+		g_YYTKInterface->CallBuiltin("variable_global_set", { "myr_CustomMusicList", g_YYTKInterface->CallBuiltin("array_create", {}) });
 	}
-	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "dbl_CustomMusicList" }), snd });
+	g_YYTKInterface->CallBuiltin("array_push", { g_YYTKInterface->CallBuiltin("variable_global_get", { "myr_CustomMusicList" }), snd });
 
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("mus_list"), snd });
 	g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal("song_name"), (string_view)musicName });
 
-	//Files::CopyFileTo(Files::GetModsDirectory() + path, Files::GetSteamDirectory());
+	/*
+	fs::path source = Files::GetModsDirectory() + path;
+	fs::path destiny = Files::GetSteamDirectory() + "customMusic/";
+	auto target = destiny / source.filename();
+	
+	fs::copy_file(source, target, fs::copy_options::overwrite_existing);
+	*/
 
 	return snd.ToDouble();
 }
@@ -442,9 +489,13 @@ Unlock the provided music piece at the jukebox.
 @param yorig the y position in pixels of the sprite's origin  
 @return the sprite ID assigned to the texture
 */
-double DatabaseLoader::DBLua::GetCustomSprite(string path, double imgnum, double xorig, double yorig)
+double DatabaseLoader::DBLua::GetCustomSprite(string path, double imgnum, double xorig, double yorig, double frames)
 {
-	return g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("DatabaseLoader/Mods/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
+	RValue a = g_YYTKInterface->CallBuiltin("sprite_add", { (string_view)("MyriadLoader/Mods/" + path), imgnum, false, false, xorig, yorig }).ToDouble();
+
+	g_YYTKInterface->CallBuiltin("sprite_set_speed", {a, frames, 0});
+
+	return a.ToDouble();
 }
 
 /***
@@ -471,6 +522,24 @@ Plays a sound at the given X position.
 void DatabaseLoader::DBLua::DoSoundExt(double soundType, double pitch, double gain, double x)
 {
 	GMWrappers::CallGameScript("gml_Script_sound_do_ext", { soundType, pitch, gain, x });
+}
+
+void DatabaseLoader::DBLua::DoMusic(double soundType)
+{
+	GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+
+	RValue rval = g_YYTKInterface->CallBuiltin("audio_play_sound", { soundType, 0, true });
+	g_YYTKInterface->CallBuiltin("audio_sound_gain", { rval, GMWrappers::GetGlobal("volume_music"), 0 });
+	GMWrappers::SetGlobal("current_music", rval);
+	GMWrappers::SetGlobal("song_length", g_YYTKInterface->CallBuiltin("audio_sound_length", { GMWrappers::GetGlobal("current_music") }));
+}
+
+void DatabaseLoader::DBLua::ShowBossMessage(double x, double y, string str)
+{
+	RValue msg = g_YYTKInterface->CallGameScript("gml_Script_instance_create", { x, y, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bossMessage"})});
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { msg, "boss_message", (string_view)str });
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { msg, "drawx", x });
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { msg, "drawy", y });
 }
 
 /***
@@ -582,6 +651,233 @@ double DatabaseLoader::DBLua::SpawnParticle(double x, double y, double xvel, dou
 
 	return part.ToDouble();
 }
+double DatabaseLoader::DBLua::SpawnBossIntro(double x, double y, string name)
+{
+	RValue enemyAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)name });
+	RValue enemyExists = g_YYTKInterface->CallBuiltin("object_exists", { enemyAsset });
+
+	//GMWrappers::CallGameScript("gml_Script_boss_locks", {});
+	GMWrappers::SetGlobal("boss_mode", 1);
+
+	if (!enemyExists)
+	{
+		RValue intro = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
+			g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_boss_intro_template" }) });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)name });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "behavior", "myr_custom" });
+		GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+
+		return intro.ToDouble();
+	}
+
+	return 0.0;
+}
+
+void DatabaseLoader::DBLua::KillBoss()
+{
+	RValue result;
+
+	g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_screen"}), "fade_shift", -1.5 });
+	GMWrappers::CallGameScript("gml_Script_shake", { 50 });
+}
+
+void DatabaseLoader::DBLua::ClearBullets(double x, double y)
+{
+	GMWrappers::CallGameScript("gml_Script_clearBullets", { x, y });
+}
+
+void DatabaseLoader::DBLua::AddScreenshake(double amount)
+{
+	GMWrappers::CallGameScript("gml_Script_shake", { amount });
+}
+
+double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
+{
+	RValue enemyAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)name });
+	RValue enemyExists = g_YYTKInterface->CallBuiltin("object_exists", { enemyAsset });
+
+	if (enemyExists)
+	{
+		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
+			g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)name}) });
+		return enemy.ToDouble();
+	}
+	else
+	{
+		// The object name (between swarmers for regular enemies, and the templates for the other two types of enemies)
+		string ObjectToSpawn = "obj_swarmer";
+		if (std::find(customMinibossNames.begin(), customMinibossNames.end(), name) != customMinibossNames.end()) ObjectToSpawn = "obj_miniboss_template";
+		if (std::find(customBossNames.begin(), customBossNames.end(), name) != customBossNames.end()) ObjectToSpawn = "obj_boss_template";
+		if (std::find(customCartridgeNames.begin(), customCartridgeNames.end(), name) != customCartridgeNames.end()) ObjectToSpawn = "obj_cartridge";
+
+		RValue enemy = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 0,
+			g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)ObjectToSpawn }) });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "myr_CustomName", (string_view)name });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "behavior", "myr_custom" });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "damage_source_id", 61 });
+		if (ObjectToSpawn == "obj_boss_template")
+			g_YYTKInterface->CallBuiltin("variable_instance_set", { enemy, "hp_damage", g_YYTKInterface->CallBuiltin("variable_instance_get", {enemy, "hp"})});
+
+		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+		{
+			if (modState.at(stateNum)["all_behaviors"])
+			{
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
+				{
+
+
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
+					{
+						if (tbl.get<string>("DataType") == "enemy")
+						{
+							if (tbl.get<string>("Name") == name)
+							{
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
+								if (!result.valid())
+								{
+									sol::error error = result;
+
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
+							}
+						}
+						if (tbl.get<string>("DataType") == "cartridge")
+						{
+							if (tbl.get<string>("Name") == name)
+							{
+								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
+								if (!result.valid())
+								{
+									sol::error error = result;
+
+									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return enemy.ToDouble();
+	}
+
+	return 0.0;
+}
+
+double DatabaseLoader::DBLua::SpawnProjectile(double x, double y, double xvel, double yvel, sol::object b)
+{
+	RValue proj;
+	double id;
+	string bb;
+
+	switch (b.get_type())
+	{
+	case sol::lua_type_of_v<string>:
+		
+		bb = b.as<string>();
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)bb}) }))
+			bb = "obj_enemy_bullet_1";
+
+		proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)bb})});
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
+
+		SetDouble(id, "hspeed", xvel);
+		SetDouble(id, "vspeed", yvel);
+		return proj.ToDouble();
+
+	case sol::lua_type_of_v<double>:
+
+		proj = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_bullet_type"}) });
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { proj, "id" }).ToDouble();
+
+		SetDouble(id, "hspeed", xvel);
+		SetDouble(id, "vspeed", yvel);
+		SetDouble(id, "sprite_index", b.as<double>());
+		return proj.ToDouble();
+
+	default:
+		return 0;
+	}
+}
+
+
+double DatabaseLoader::DBLua::SpawnLaser(double x, double y, double angle, double lifetime, sol::object l, sol::object ls, sol::object le)
+{
+	RValue laser;
+	double id;
+	string ll;
+	string lls;
+	string lle;
+
+	switch (l.get_type())
+	{
+	case sol::lua_type_of_v<string>:
+
+		ll = l.as<string>();
+		lls = ls.as<string>();
+		lle = le.as<string>();
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)ll}) }))
+			ll = "obj_enemy_laser";
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)lls}) }))
+			lls = "obj_enemy_laser";
+
+		if (!g_YYTKInterface->CallBuiltin("object_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)lle}) }))
+			lle = "obj_enemy_laser";
+
+		laser = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {(string_view)ll}) });
+
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { laser, "id" }).ToDouble();
+
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "source_sprite", (string_view)lls });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "end_sprite", (string_view)lle });
+
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "angle", angle });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "lifetime", lifetime });
+		return laser.ToDouble();
+
+	case sol::lua_type_of_v<double>:
+
+		laser = g_YYTKInterface->CallBuiltin("instance_create_depth", { x, y, 1, g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_enemy_laser"}) });
+
+		id = g_YYTKInterface->CallBuiltin("variable_instance_get", { laser, "id" }).ToDouble();
+
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "angle", angle });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "lifetime", lifetime });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "beam_sprite", l.as<double>() });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "source_sprite", ls.as<double>() });
+		g_YYTKInterface->CallBuiltin("variable_instance_set", { laser, "end_sprite", le.as<double>() });
+		return laser.ToDouble();
+
+	default:
+		return 0;
+	}
+}
+
+
+bool DatabaseLoader::DBLua::CheckCart(double cartid)
+{
+	if (g_YYTKInterface->CallBuiltin("ds_list_find_index", { GMWrappers::GetGlobal("carts_picked"), cartid }).ToDouble() != -1)
+	{
+		return true;
+	}
+	else
+		return false;
+}
+
+
+void DatabaseLoader::DBLua::AddCallbackTo(double id, sol::protected_function function)
+{
+
+}
 
 /***
 Sets the depth for draw functions.
@@ -591,6 +887,8 @@ Sets the depth for draw functions.
 */
 void DatabaseLoader::DBLua::DrawSetDepth(double dep)
 {
+	g_YYTKInterface->CallBuiltin("gpu_set_zwriteenable", { true });
+	g_YYTKInterface->CallBuiltin("gpu_set_ztestenable", { true });
 	g_YYTKInterface->CallBuiltin("gpu_set_depth", { dep });
 }
 
@@ -644,17 +942,88 @@ void DatabaseLoader::DBLua::DrawSpriteExt(double x, double y, double spriteID, d
 	g_YYTKInterface->CallBuiltin("draw_sprite_ext", { spriteID, frameNumber, x, y, xScale, yScale, rotation, color, alpha });
 }
 
+void DatabaseLoader::DBLua::DrawPrimitiveBeginTexture(double spriteID, double frame)
+{
+	RValue tex = g_YYTKInterface->CallBuiltin("sprite_get_texture", { spriteID, frame });
+	g_YYTKInterface->CallBuiltin("draw_primitive_begin_texture", { 5, tex });
+}
+
+void DatabaseLoader::DBLua::DrawPrimitiveBeginSolid()
+{
+	g_YYTKInterface->CallBuiltin("draw_primitive_begin", { 5 });
+}
+
+void DatabaseLoader::DBLua::DrawVertexColor(double x, double y, double color, double alpha)
+{
+	g_YYTKInterface->CallBuiltin("draw_vertex_colour", { x, y, color, alpha });
+}
+
+void DatabaseLoader::DBLua::DrawVertexTexture(double x, double y, double texcoordx, double texcoordy)
+{
+	g_YYTKInterface->CallBuiltin("draw_vertex_texture", { x, y, texcoordx, texcoordy });
+}
+
+void DatabaseLoader::DBLua::DrawVertexEnd()
+{
+	g_YYTKInterface->CallBuiltin("draw_primitive_end", {});
+}
+
+sol::table DatabaseLoader::DBLua::DirectionTo(double x1, double y1, double x2, double y2)
+{
+	RValue dir = g_YYTKInterface->CallBuiltin("point_direction", {x1, y1, x2, y2});
+
+	RValue x = g_YYTKInterface->CallBuiltin("lengthdir_x", { 1, dir });
+	RValue y = g_YYTKInterface->CallBuiltin("lengthdir_y", { 1, dir });
+
+	return modState[currentState].create_table_with("x", x.ToDouble(), "y", y.ToDouble());
+}
+
 sol::table DatabaseLoader::DBLua::EnemyData(string name)
 {
 	return modState[currentState].create_table_with(
 		"DataType", "enemy",
 		"Name", name,
+		"Miniboss", false,
+		"Boss", false,
+		"BossFloor", 0,
+		"ShouldForceBoss", [](double) {return false; },
+		"BossIntro", [](double) {},
+		"BossBackground", [](double) {},
 		"Create", [](double) {},
 		"Step", [](double) {},
 		"Destroy", [](double) {},
 		"Draw", [](double) {},
 		"TakeDamage", [](double, double) {});
 }
+
+
+sol::table DatabaseLoader::DBLua::CartridgeData(string name, string shown, string desc)
+{
+	return modState[currentState].create_table_with(
+		"DataType", "cartridge",
+		"Name", name,
+		"ShownName", shown,
+		"Description", desc,
+		"Create", [](double) {});
+}
+
+
+sol::table DatabaseLoader::DBLua::FloorData(string name)
+{
+	return modState[currentState].create_table_with(
+		"DataType", "floormap",
+		"Name", name,
+		"Floor", 0,
+		"Caption", [](string) {},
+		"Tileset", [](double) { return GetAsset("spr_floor_mask"); },
+		"Rooms", [](string) {},
+		"RoomsDestination", [](string) {},
+		"Create", [](double) {},
+		"Music", [](double) {return GetAsset("mus_floor6");},
+		"BossList", [](double) {},
+		"ShouldForceFloor", [](double) {return false; });
+}
+
 
 sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 {
@@ -663,7 +1032,7 @@ sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 		"Name", name,
 		"Create", [](double) {},
 		"Step", [](double) {},
-		"Destroy", [](double) {},
+		"CollideWith", [](double, double) {},
 		"Draw", [](double) {});
 }
 
@@ -672,6 +1041,32 @@ sol::table DatabaseLoader::DBLua::GlobalData()
 	return modState[currentState].create_table_with(
 		"DataType", "global",
 		"Step", []() {},
+		"OverrideBoss", []() { return ""; },
 		"Draw", []() {},
 		"DrawUI", []() {});
 }
+
+sol::table DatabaseLoader::DBLua::PlayerData()
+{
+	return modState[currentState].create_table_with(
+		"DataType", "player",
+		"Step", [](double) {},
+		"TakeDamage", [](double, double) {},
+		"Draw", [](double) {});
+}
+
+void DatabaseLoader::DBLua::AddBestiaryEntry(string name, double race, double mugshot, double sprite, double hp, double score)
+{
+	int id = Files::HashString(name);
+}
+
+void DatabaseLoader::DBLua::AddRoomsTo(string sourceName, string destinationName)
+{
+	roomFiles.push_back(RoomFileReplacement(
+		Files::GetModsDirectory() + sourceName,
+		Files::GetSteamDirectory() + "rooms/" + destinationName,
+		Files::GetSteamDirectory() + "rooms/backup/" + destinationName
+		));
+}
+
+
