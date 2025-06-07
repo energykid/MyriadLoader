@@ -45,7 +45,7 @@ namespace DatabaseLoader
 			IN int ArgumentCount,
 			IN RValue** Arguments
 		);
-		static void ContentDataEvents(
+		static void EnemyData(
 			FWCodeEvent& FunctionContext
 		);
 	};
